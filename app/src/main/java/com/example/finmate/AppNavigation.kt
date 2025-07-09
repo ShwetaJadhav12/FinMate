@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.finmate.pages.AuthScreen
+import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
 import com.example.finmate.pages.SignupScreen
 import com.google.firebase.Firebase
@@ -36,9 +37,12 @@ fun AppNavigation(
         composable("signup") {
             SignupScreen(navController)
         }
-//        composable("home") {
-//            HomeScreen(navController)
-//        }
+        composable("home") {
+            HomeScreen(
+                navController, modifier
+
+            )
+        }
     }
 
 
