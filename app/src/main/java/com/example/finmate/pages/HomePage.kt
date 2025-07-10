@@ -4,8 +4,12 @@ import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+
+import com.example.finmate.components.GradientButton
+import com.example.finmate.components.GradientDashboardCard
 import com.example.finmate.model.DrawerItems
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -198,26 +209,110 @@ fun HomeScreen(navController: NavHostController) {
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // 🧾 Clean space for your cards/analytics
-                // No "Welcome back" text – keeps it clean
+
 
                 // Example placeholder box:
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
+                        .height(130.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(Color(0xFFE8F5E9)),
-                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Text(
-                        text = currentDate,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = currentDate,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            modifier = Modifier.padding(18.dp)
+                        )
+                        Text(
+                            text = "You have used 90% of your budget. Try saving in Food",
+                            color = Color(0xFF4D1605),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding( start=18.dp))
+
+                    }
+
                 }
+                GradientButton(
+                    text = "Predict Budget",
+                    onClick = {  },
+                    gradientColors = listOf(
+                        Color(0xFF1A481D),
+                        Color(0xFF478049)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                DashboardGrid()
+
+
+
+
+
             }
+        }
+    }
+}
+@Composable
+fun DashboardGrid() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp), // Reduced horizontal padding
+        verticalArrangement = Arrangement.spacedBy(8.dp) // Less space between rows
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp) // Less space between columns
+        ) {
+            GradientDashboardCard(
+                title = "Expenses",
+                icon = Icons.Default.Menu,
+                gradientColors = listOf(Color(0xFF4CAF50), Color(0xFF81C784)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp) // Slightly shorter height
+            )
+            GradientDashboardCard(
+                title = "Analytics",
+                icon = Icons.Default.Person,
+                gradientColors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            GradientDashboardCard(
+                title = "Budget",
+                icon = Icons.Default.Menu,
+                gradientColors = listOf(Color(0xFF8E24AA), Color(0xFFCE93D8)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+            )
+            GradientDashboardCard(
+                title = "Settings",
+                icon = Icons.Default.Settings,
+                gradientColors = listOf(Color(0xFFFF9800), Color(0xFFFFCC80)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+            )
         }
     }
 }
