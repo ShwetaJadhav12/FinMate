@@ -39,7 +39,7 @@ fun AppNavigation(
         }
         composable("home") {
             HomeScreen(
-                navController, modifier
+                navController
 
             )
         }
