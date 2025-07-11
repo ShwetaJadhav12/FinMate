@@ -1,6 +1,8 @@
 package com.example.finmate
 
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -10,10 +12,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.finmate.pages.AuthScreen
 import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
+import com.example.finmate.pages.ProfilePage
 import com.example.finmate.pages.SignupScreen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
 
@@ -42,6 +46,9 @@ fun AppNavigation(
                 navController
 
             )
+        }
+        composable("profilepage") {
+            ProfilePage(navController)
         }
     }
 

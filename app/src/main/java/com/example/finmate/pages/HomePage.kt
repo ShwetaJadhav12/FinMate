@@ -4,6 +4,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -66,13 +67,19 @@ fun HomeScreen(navController: NavHostController) {
                 actions = {
                     Box(
                         modifier = Modifier
-                            .padding(end = 16.dp)
+                            .padding(end = 16.dp).border(
+                                width = 0.5.dp,
+                                color = Color.White,
+                                shape = CircleShape,
+
+                            )
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.2f))
                             .clickable {
-                                Toast.makeText(context, "Profile clicked", Toast.LENGTH_SHORT).show()
+                                navController.navigate("profilepage")
                             },
+
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -311,7 +318,7 @@ fun DashboardGrid() {
             GradientDashboardCard(
                 title = "Expenses",
                 t1 = "₹10,000",
-                gradientColors = listOf(Color(0xFF4CAF50), Color(0xFF81C784)),
+                gradientColors = listOf(Color(0xFFD21E60), Color(0xFFD0839F)),
                 modifier = Modifier.weight(1f).height(100.dp)
             )
             GradientDashboardCard(
