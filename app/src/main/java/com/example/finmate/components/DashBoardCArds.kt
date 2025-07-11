@@ -24,11 +24,10 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun GradientDashboardCard(
     title: String,
-    icon: ImageVector,
+    t1: String,
     gradientColors: List<Color>,
     modifier: Modifier = Modifier,
     titleColor: Color = Color.White,
-    iconTint: Color = Color.White,
     onClick: () -> Unit = {}
 ) {
     Box(
@@ -42,18 +41,21 @@ fun GradientDashboardCard(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(30.dp)
-            )
+
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
                 color = titleColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = t1,
+                color = titleColor,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
+
             )
         }
     }

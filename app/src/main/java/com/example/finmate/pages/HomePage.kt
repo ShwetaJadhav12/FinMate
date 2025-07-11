@@ -1,7 +1,9 @@
 package com.example.finmate.pages
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.components.GradientBox
 
 import com.example.finmate.components.GradientButton
 import com.example.finmate.components.GradientDashboardCard
@@ -63,7 +67,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@SuppressLint("NewApi")
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -74,7 +78,6 @@ fun HomeScreen(navController: NavHostController) {
     val currentDate = remember {
         LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"))
     }
-
 
     LaunchedEffect(Unit) {
         val uid = Firebase.auth.currentUser?.uid
@@ -92,7 +95,6 @@ fun HomeScreen(navController: NavHostController) {
     }
 
     val initial = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
-
     val drawerItems = listOf(
         DrawerItems("Home", "home"),
         DrawerItems("Analytics", "analytics"),
@@ -158,8 +160,7 @@ fun HomeScreen(navController: NavHostController) {
                             text = "FinMate",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 23.sp,
-                            maxLines = 1
+                            fontSize = 23.sp
                         )
                     },
                     navigationIcon = {
@@ -194,8 +195,6 @@ fun HomeScreen(navController: NavHostController) {
                             )
                         }
                     },
-
-
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color(0xFF4CAF50),
                         titleContentColor = Color.White
@@ -210,8 +209,6 @@ fun HomeScreen(navController: NavHostController) {
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
 
-
-                // Example placeholder box:
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -235,40 +232,93 @@ fun HomeScreen(navController: NavHostController) {
                             color = Color(0xFF4D1605),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
-                            modifier = Modifier.padding( start=18.dp))
-
+                            modifier = Modifier.padding(start = 18.dp)
+                        )
                     }
-
                 }
-                GradientButton(
-                    text = "Predict Budget",
-                    onClick = {  },
-                    gradientColors = listOf(
-                        Color(0xFF1A481D),
-                        Color(0xFF478049)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
 
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    GradientButton(
+                        text = "Predict Budget",
+                        onClick = {
+                            Toast.makeText(context, "Predict Budget Clicked", Toast.LENGTH_SHORT).show()
+                        },
+                        gradientColors = listOf(Color(0xFF1A481D), Color(0xFF478049)),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
                 DashboardGrid()
 
+                Spacer(modifier = Modifier.height(10.dp))
+                GradientBox(
+                    text = "Top Spending Categories: Food, Groceries",
+                    gradientColors = listOf(Color(0xFF641E08), Color(0xFFC97960)),
+                    fontSize = 18.sp,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(55.dp)
+                        .padding(horizontal = 6.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                GradientBox(
+                    text = "Add Expenses",
+                    gradientColors = listOf(Color(0xFF0D47A1), Color(0xFF42A5F5)),
+                    fontSize = 18.sp,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(55.dp)
+                        .padding(horizontal = 6.dp)
+                        .clickable {
+                            // Navigate to Add Expense screen
+                        }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    GradientButton(
+                        text = "Set Budget",
+                        onClick = {
+                            Toast.makeText(context, "Set Budget Clicked", Toast.LENGTH_SHORT).show()
+                        },
+                        gradientColors = listOf(Color(0xFF1A481D), Color(0xFF478049)),
+                        modifier = Modifier.weight(1f).padding(end = 4.dp)
+                    )
+
+                    GradientButton(
+                        text = "Add Income",
+                        onClick = {
+                            Toast.makeText(context, "Add Income Clicked", Toast.LENGTH_SHORT).show()
+                        },
+                        gradientColors = listOf(Color(0xFF1A481D), Color(0xFF478049)),
+                        modifier = Modifier.weight(1f)
+                    )
 
 
-
-
+                }
             }
         }
     }
 }
+
 @Composable
 fun DashboardGrid() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp), // Reduced horizontal padding
+            .padding(horizontal = 8.dp, vertical = 10.dp), // Reduced horizontal padding
         verticalArrangement = Arrangement.spacedBy(8.dp) // Less space between rows
     ) {
         Row(
@@ -277,15 +327,15 @@ fun DashboardGrid() {
         ) {
             GradientDashboardCard(
                 title = "Expenses",
-                icon = Icons.Default.Menu,
+                t1 = "10000",
                 gradientColors = listOf(Color(0xFF4CAF50), Color(0xFF81C784)),
                 modifier = Modifier
                     .weight(1f)
                     .height(90.dp) // Slightly shorter height
             )
             GradientDashboardCard(
-                title = "Analytics",
-                icon = Icons.Default.Person,
+                title = "Remaining",
+                t1 = "20000",
                 gradientColors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)),
                 modifier = Modifier
                     .weight(1f)
@@ -299,15 +349,15 @@ fun DashboardGrid() {
         ) {
             GradientDashboardCard(
                 title = "Budget",
-                icon = Icons.Default.Menu,
+                t1 = "80000",
                 gradientColors = listOf(Color(0xFF8E24AA), Color(0xFFCE93D8)),
                 modifier = Modifier
                     .weight(1f)
                     .height(90.dp)
             )
             GradientDashboardCard(
-                title = "Settings",
-                icon = Icons.Default.Settings,
+                title = "Income",
+                t1 = "100000",
                 gradientColors = listOf(Color(0xFFFF9800), Color(0xFFFFCC80)),
                 modifier = Modifier
                     .weight(1f)
