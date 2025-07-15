@@ -9,6 +9,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.finmate.pages.AddExpenseScreen
 import com.example.finmate.pages.AuthScreen
 import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
@@ -49,6 +50,9 @@ fun AppNavigation(
         }
         composable("profilepage") {
             ProfilePage(navController)
+        }
+        composable("addExpense") {
+            AddExpenseScreen(navController)
         }
     }
 

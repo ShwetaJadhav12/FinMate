@@ -97,7 +97,7 @@ fun HomeScreen(navController: NavHostController) {
 
         bottomBar = {
             NavigationBar(containerColor = Color(0xFFF7F7F7)) {
-                val items = listOf("Home", "Analytics", "Settings")
+                val items = listOf("Home", "Analytics", "Category","Settings")
                 val icons = listOf(
                     Icons.Default.Home,
                     Icons.Default.Add,
@@ -195,6 +195,7 @@ fun HomeScreen(navController: NavHostController) {
                 Button(
                     onClick = {
                         Toast.makeText(context, "Add Expenses Clicked", Toast.LENGTH_SHORT).show()
+                        navController.navigate("addExpense")
                     },
                     modifier = Modifier
                         .weight(1f)
