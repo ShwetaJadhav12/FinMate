@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.finmate.pages.AddExpenseScreen
 import com.example.finmate.pages.AuthScreen
+import com.example.finmate.pages.CategoryGridScreen
 import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
 import com.example.finmate.pages.ProfilePage
@@ -48,6 +49,9 @@ fun AppNavigation(
 
             )
         }
+        composable("categorypage") {
+            CategoryGridScreen()
+        }
         composable("profilepage") {
             ProfilePage(navController)
         }
@@ -57,7 +61,7 @@ fun AppNavigation(
     }
 
 
-    }
+}
 object GlobNavigation {
     @SuppressLint("StaticFieldLeak")
     lateinit var navController: NavHostController

@@ -90,7 +90,7 @@ fun HomeScreen(navController: NavHostController) {
                                 color = Color.White,
                                 shape = CircleShape,
 
-                            )
+                                )
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.2f))
@@ -125,7 +125,16 @@ fun HomeScreen(navController: NavHostController) {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
-                        onClick = { selectedIndex = index },
+                        onClick = { selectedIndex = index
+                            when (index) {
+                                0 -> navController.navigate("home")
+                                1 -> navController.navigate("addExpense")
+                                2 -> navController.navigate("categorypage")
+                                3 -> navController.navigate("profilepage")
+
+                            }
+
+                                  },
                         icon = { Icon(icons[index], contentDescription = item) },
                         label = { Text(item, fontSize = 12.sp) },
                         alwaysShowLabel = true
