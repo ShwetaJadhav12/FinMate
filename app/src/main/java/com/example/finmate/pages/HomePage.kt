@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.components.ExpenseEntryOptionsDialog
 import com.example.finmate.components.GradientBox
 import com.example.finmate.components.GradientButton
 import com.example.finmate.components.GradientDashboardCard
@@ -54,6 +55,23 @@ fun HomeScreen(navController: NavHostController) {
                     userName = doc.getString("name") ?: "User"
                 }
         }
+    }
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Show the dialog conditionally
+    if (showDialog) {
+        ExpenseEntryOptionsDialog(
+            onDismiss = { showDialog = false },
+            onAddManually = {
+                showDialog = false
+                // Navigate to manual form screen
+                navController.navigate("addExpense")
+            },
+            onScanReceipt = {
+                showDialog = false
+                // Navigate to scan camera screen
+            }
+        )
     }
 
     var selectedIndex by remember { mutableStateOf(0) }
@@ -194,8 +212,7 @@ fun HomeScreen(navController: NavHostController) {
             ) {
                 Button(
                     onClick = {
-                        Toast.makeText(context, "Add Expenses Clicked", Toast.LENGTH_SHORT).show()
-                        navController.navigate("addExpense")
+                        showDialog = true
                     },
                     modifier = Modifier
                         .weight(1f)
