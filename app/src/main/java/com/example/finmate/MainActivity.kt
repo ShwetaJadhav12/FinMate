@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.finmate.pages.CategoryGridScreen
 import com.example.finmate.ui.theme.FinMateTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,9 +21,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             FinMateTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppNavigation(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+//                    AppNavigation(
+//                        modifier = Modifier.padding(innerPadding)
+//                    )
+                    CategoryGridScreen()
                 }
             }
         }

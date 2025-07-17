@@ -1,7 +1,7 @@
 package com.example.finmate.pages
 
-
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.components.DateAndTimePicker
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -31,86 +33,66 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavHostController) {
-    val context = LocalContext.current
 
     // Form state
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Food") }
     var note by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("Select Date") }
+
 
     val categories = listOf("Food", "Transport", "Groceries", "Utilities", "Shopping", "Health", "Entertainment", "Others")
 
-    val calendar = Calendar.getInstance()
-    val datePicker = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            date = "$dayOfMonth/${month + 1}/$year"
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+
+
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Add Expense",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = Color.White
-                    )
+                    Text("Add Expense", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF4CAF50))
             )
         },
         containerColor = Color(0xFFF7FFF9)
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
 
             Text("Expense Details", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
 
-            // Title
+
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Title") },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
+
             )
 
-            // Amount
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
                 label = { Text("Amount (₹)") },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                )
+                singleLine = true
             )
 
             // Category Dropdown
@@ -121,22 +103,16 @@ fun AddExpenseScreen(navController: NavHostController) {
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
-                    shape = RoundedCornerShape(10.dp),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
-
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    categories.forEach { item ->
+                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    categories.forEach { category ->
                         DropdownMenuItem(
-                            text = { Text(item) },
+                            text = { Text(category) },
                             onClick = {
-                                selectedCategory = item
+                                selectedCategory = category
                                 expanded = false
                             }
                         )
@@ -144,93 +120,36 @@ fun AddExpenseScreen(navController: NavHostController) {
                 }
             }
 
-            // Date Picker
-            OutlinedTextField(
-                value = date,
-                onValueChange = {},
-                label = { Text("Date") },
-                shape = RoundedCornerShape(10.dp),
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { datePicker.show() }
-            )
-
-            // Note
-            OutlinedTextField(
-                value = note,
-                onValueChange = { note = it },
-                label = { Text("Note (optional)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                shape = RoundedCornerShape(10.dp)
-            )
+            DateAndTimePicker()
 
             // Save Button
             Button(
                 onClick = {
-                    if (title.isNotBlank() && amount.isNotBlank() && date != "Select Date") {
-                        saveExpenseToFirestore(
-                            title,
-                            amount.toDoubleOrNull() ?: 0.0,
-                            selectedCategory,
-                            note,
-                            date,
-                            context
-                        )
-                        navController.popBackStack()
-                    } else {
-                        Toast.makeText(context, "Please fill all required fields", Toast.LENGTH_SHORT).show()
-                    }
+//                    if (title.isNotBlank() && amount.isNotBlank() && date != "Select Date") {
+//                        saveExpenseToFirestore(
+//                            title,
+//                            amount.toDoubleOrNull() ?: 0.0,
+//                            selectedCategory,
+//                            note,
+//                            "$date $time",
+//                            context
+//                        )
+//                        navController.popBackStack()
+//                    } else {
+//                        Toast.makeText(context, "Please fill all required fields", Toast.LENGTH_SHORT).show()
+//                    }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50),
+                    containerColor = Color(0xFF388E3C),
                     contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(52.dp)
             ) {
                 Text("Save Expense", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
-    }
-}
-
-fun saveExpenseToFirestore(
-    title: String,
-    amount: Double,
-    category: String,
-    note: String,
-    date: String,
-    context: android.content.Context
-) {
-    val uid = Firebase.auth.currentUser?.uid
-    val db = Firebase.firestore
-
-    if (uid != null) {
-        val expense = hashMapOf(
-            "title" to title,
-            "amount" to amount,
-            "category" to category,
-            "note" to note,
-            "date" to date,
-            "timestamp" to System.currentTimeMillis()
-        )
-
-        db.collection("expenses")
-            .document(uid)
-            .collection("user_expenses")
-            .add(expense)
-            .addOnSuccessListener {
-                Toast.makeText(context, "Expense saved!", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "Failed to save expense", Toast.LENGTH_SHORT).show()
-            }
-    } else {
-        Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
     }
 }
