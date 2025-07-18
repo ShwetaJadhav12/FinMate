@@ -1,15 +1,16 @@
 package com.example.finmate.pages
 
-
-
 import android.widget.Toast
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,17 +19,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.finmate.GlobNavigation
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfilePage(navController: NavController? = null) {
+fun ProfilePage(
+    navController: NavController,
+    selectedIndex: Int = 3,
+    onTabSelected: (Int) -> Unit
+) {
     val context = LocalContext.current
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    var selectedIndex by remember { mutableStateOf(3) } // Default to Category page
+
 
     var userName by remember { mutableStateOf("User Name") }
     var userEmail by remember { mutableStateOf("user@example.com") }
@@ -56,18 +64,41 @@ fun ProfilePage(navController: NavController? = null) {
         topBar = {
             TopAppBar(
                 title = { Text("Profile", fontSize = 20.sp) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        navController?.popBackStack() ?: backDispatcher?.onBackPressed()
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF4CAF50),
                     titleContentColor = Color.White
                 )
             )
+        },
+        bottomBar = {
+            NavigationBar(containerColor = Color(0xFFF7F7F7)) {
+                val items = listOf("Home", "Analytics", "Category", "Settings")
+                val icons = listOf(
+                    Icons.Default.Home,
+                    Icons.Default.Add,
+                    Icons.Default.Favorite,
+                    Icons.Default.Settings
+                )
+                items.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = selectedIndex == index,
+                        onClick = {
+                            selectedIndex = index
+                            when (index) {
+                                0 -> GlobNavigation.navController.navigate("home") {
+                                    popUpTo("home") { inclusive = true }}
+                                1 -> GlobNavigation.navController.navigate("analytics")
+                                2 -> {GlobNavigation.navController.navigate("categorypage")} // Already on Category page
+                                3 -> {}
+                            }
+                        },
+                        icon = { Icon(icons[index], contentDescription = item) },
+                        label = { Text(item, fontSize = 12.sp) },
+                        alwaysShowLabel = true
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Column(
@@ -77,7 +108,7 @@ fun ProfilePage(navController: NavController? = null) {
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Icon with Initial
+            // Profile picture
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -97,14 +128,10 @@ fun ProfilePage(navController: NavController? = null) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // User Info
-            Text(text = userName, fontSize = 22.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text(text = userName, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(text = userEmail, fontSize = 16.sp, color = Color.Gray)
-
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Edit Profile Button
             Button(
                 onClick = {
                     Toast.makeText(context, "Edit Profile Clicked", Toast.LENGTH_SHORT).show()
@@ -117,12 +144,11 @@ fun ProfilePage(navController: NavController? = null) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Logout Button
             Button(
                 onClick = {
                     FirebaseAuth.getInstance().signOut()
                     Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
-                    navController?.navigate("login") {
+                    navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 },

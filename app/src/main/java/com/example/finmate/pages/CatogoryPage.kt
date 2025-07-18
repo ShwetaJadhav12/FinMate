@@ -73,14 +73,9 @@ fun CategoryGridScreen() {
                 title = {
                     Text(
                         text = "Categories",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                        style = MaterialTheme.typography.titleLarge)
                 },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF80B2AE),
                     titleContentColor = Color.White,
@@ -107,7 +102,7 @@ fun CategoryGridScreen() {
                                 0 -> navController.navigate("home") {
                                     popUpTo("home") { inclusive = true }
                                 }
-                                1 -> navController.navigate("addExpense")
+                                1 -> navController.navigate("analytics")
                                 2 -> {} // Already on Category page
                                 3 -> navController.navigate("profilepage")
                             }

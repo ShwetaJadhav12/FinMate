@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.finmate.pages.AddExpenseScreen
+import com.example.finmate.pages.AnalyticsPage
 import com.example.finmate.pages.AuthScreen
 import com.example.finmate.pages.CategoryGridScreen
 import com.example.finmate.pages.HomeScreen
@@ -53,8 +54,38 @@ fun AppNavigation(
             CategoryGridScreen()
         }
         composable("profilepage") {
-            ProfilePage(navController)
+            ProfilePage(
+                navController = navController,
+                selectedIndex = 3, // Settings selected
+                onTabSelected = { index ->
+                    when (index) {
+                        0 -> navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                        1 -> navController.navigate("addExpense")
+                        2 -> navController.navigate("categorypage")
+                        3 -> {} // already on settings/profile
+                    }
+                }
+            )
         }
+        composable("analytics") {
+            AnalyticsPage(
+                selectedIndex = 1,
+                navController = navController,
+                onTabSelected = { index ->
+                    when (index) {
+                        0 ->  navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }}
+                        1 -> {} // current page
+                        2 -> navController.navigate("categorypage")
+                        3 -> navController.navigate("profilepage")
+                    }
+                }
+            )
+        }
+
+
         composable("addExpense") {
             AddExpenseScreen(navController)
         }

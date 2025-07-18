@@ -21,12 +21,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FinMateTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppNavigation(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-
-                }
+                Scaffold(modifier = Modifier.fillMaxSize()) {
+                    innerPadding ->
+                    AppNavigation(modifier = Modifier.padding(innerPadding)) }
             }
         }
     }

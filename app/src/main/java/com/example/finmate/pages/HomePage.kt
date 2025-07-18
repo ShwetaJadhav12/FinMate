@@ -128,7 +128,7 @@ fun HomeScreen(navController: NavHostController) {
                         onClick = { selectedIndex = index
                             when (index) {
                                 0 -> navController.navigate("home")
-                                1 -> navController.navigate("addExpense")
+                                1 -> navController.navigate("analytics")
                                 2 -> navController.navigate("categorypage")
                                 3 -> navController.navigate("profilepage")
 
