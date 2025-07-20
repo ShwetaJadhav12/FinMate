@@ -1,7 +1,9 @@
 package com.example.finmate.pages
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.widget.Toast
+import java.time.format.TextStyle
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.components.AddCategoryBudgetForm
+import com.example.finmate.components.AddIncomeToDashBoard
+import com.example.finmate.components.AddMonthlyBudgetForm
 import com.example.finmate.components.ExpenseEntryOptionsDialog
 import com.example.finmate.components.GradientBox
 import com.example.finmate.components.GradientButton
@@ -35,6 +40,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +50,12 @@ fun HomeScreen(navController: NavHostController) {
     var userName by remember { mutableStateOf("User") }
     val initial = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
     val currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+    var incomemain by remember { mutableStateOf(0) }
+    var expensemain by remember { mutableStateOf(0) }
+    var budetmain by remember { mutableStateOf(0) }
+    var remaining by remember { mutableStateOf(0) }
+    var showIncomeDialog by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -57,20 +69,73 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
     var showDialog by remember { mutableStateOf(false) }
-
-    // Show the dialog conditionally
     if (showDialog) {
         ExpenseEntryOptionsDialog(
             onDismiss = { showDialog = false },
             onAddManually = {
                 showDialog = false
-                // Navigate to manual form screen
                 navController.navigate("addExpense")
             },
-            onScanReceipt = {
-                showDialog = false
-                // Navigate to scan camera screen
-            }
+            onScanReceipt = { showDialog = false }
+        )
+    }
+
+    var showMainDialog by remember { mutableStateOf(false) }
+    var showMonthlyDialog by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+
+    if (showMainDialog) {
+        AlertDialog(
+            onDismissRequest = { showMainDialog = false },
+            title = { Text("Choose Budget Type") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = {
+                        showMainDialog = false
+                        showMonthlyDialog = true
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Add Monthly Budget")
+                    }
+                    Button(onClick = {
+                        showMainDialog = false
+                        showCategoryDialog = true
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Add Category-wise Budget")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {}
+        )
+    }
+
+    if (showMonthlyDialog) {
+        AlertDialog(
+            onDismissRequest = { showMonthlyDialog = false },
+            title = { Text("Add Monthly Budget") },
+            text = {
+                AddMonthlyBudgetForm(
+                    onSave = { showMonthlyDialog = false },
+                    onCancel = { showMonthlyDialog = false }
+                )
+            },
+            confirmButton = {},
+            dismissButton = {}
+        )
+    }
+
+    if (showCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showCategoryDialog = false },
+            title = { Text("Add Category-wise Budget") },
+            text = {
+                AddCategoryBudgetForm(
+                    onSave = { showCategoryDialog = false },
+                    onCancel = { showCategoryDialog = false }
+                )
+            },
+            confirmButton = {},
+            dismissButton = {}
         )
     }
 
@@ -85,56 +150,38 @@ fun HomeScreen(navController: NavHostController) {
                 actions = {
                     Box(
                         modifier = Modifier
-                            .padding(end = 16.dp).border(
-                                width = 0.5.dp,
-                                color = Color.White,
-                                shape = CircleShape,
-
-                                )
+                            .padding(end = 16.dp)
+                            .border(width = 0.5.dp, color = Color.White, shape = CircleShape)
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.2f))
                             .clickable {
                                 navController.navigate("profilepage")
                             },
-
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = initial,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(text = initial, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2E7D32))
             )
         },
-
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFFF7F7F7)) {
-                val items = listOf("Home", "Analytics", "Category","Settings")
-                val icons = listOf(
-                    Icons.Default.Home,
-                    Icons.Default.Add,
-                    Icons.Default.Favorite,
-                    Icons.Default.Settings
-                )
+            NavigationBar(containerColor = Color(0xFF1B5E20)) {
+                val items = listOf("Home", "Analytics", "Category", "Settings")
+                val icons = listOf(Icons.Default.Home, Icons.Default.Add, Icons.Default.Favorite, Icons.Default.Settings)
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
-                        onClick = { selectedIndex = index
+                        onClick = {
+                            selectedIndex = index
                             when (index) {
                                 0 -> navController.navigate("home")
                                 1 -> navController.navigate("analytics")
                                 2 -> navController.navigate("categorypage")
                                 3 -> navController.navigate("profilepage")
-
                             }
-
-                                  },
+                        },
                         icon = { Icon(icons[index], contentDescription = item) },
                         label = { Text(item, fontSize = 12.sp) },
                         alwaysShowLabel = true
@@ -142,7 +189,6 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
         }
-
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -150,7 +196,6 @@ fun HomeScreen(navController: NavHostController) {
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            // Top Card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -159,17 +204,12 @@ fun HomeScreen(navController: NavHostController) {
                     .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = currentDate,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.DarkGray
-                    )
+                    Text(text = currentDate, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.DarkGray)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "You have used 90% of your budget.\nTry saving in Food.",
                         fontSize = 15.sp,
-                        color = Color(0xFF4D1605),
+                        color = Color(0xFF4E342E),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -177,198 +217,98 @@ fun HomeScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Buttons
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 GradientButton(
                     text = "Predict Budget",
                     onClick = { Toast.makeText(context, "Predict Budget Clicked", Toast.LENGTH_SHORT).show() },
-                    gradientColors = listOf(Color(0xFF1A481D), Color(0xFF478049)),
+                    gradientColors = listOf(Color(0xFF1B5E20), Color(0xFF66BB6A)),
                     modifier = Modifier.weight(1f)
                 )
-
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            DashboardGrid()
+            DashboardGrid(
+                expensemain = expensemain,
+                remaining = remaining,
+                budetmain = budetmain,
+                incomemain = incomemain
+            )
 
             Spacer(modifier = Modifier.height(18.dp))
-
-            // Top Categories
             GradientBox(
                 text = "Top Spending Categories: Food, Groceries",
-                gradientColors = listOf(Color(0xFF641E08), Color(0xFFC97960)),
+                gradientColors = listOf(Color(0xFF004D40), Color(0xFF26A69A)),
                 fontSize = 16.sp,
                 fontColor = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             )
 
             Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = "Add New",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 20.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-            )
+            Text(text = "Add New", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = {
-                        showDialog = true
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(45.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF93B694),
-                        contentColor = Color(0xFF053607)
-                    )
-                ) {
-                    Text(
-                        text = "Expenses",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                }
 
-                Button(
-                    onClick = {
-                        Toast.makeText(context, "Set Budget Clicked", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(45.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF93B694),
-                        contentColor = Color(0xFF053607)
-                    )
-                ) {
-                    Text(
-                        text = "Budget",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                val buttonColors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50), contentColor = Color.White)
+                Button(onClick = { showDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+                    Text("Expenses", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
+                Button(onClick = { showMainDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+                    Text("Budget", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
+                Button(onClick = {
+                    showIncomeDialog = true
 
-                Button(
-                    onClick = {
-                        Toast.makeText(context, "Add Income Clicked", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(45.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF93B694),
-                        contentColor = Color(0xFF053607)
-                    )
-                ) {
-                    Text(
-                        text = "Income",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
+
+                }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+                    Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
-            Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = "Recent Transactions",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 20.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+            AddIncomeToDashBoard(
+                showDialog = showIncomeDialog,
+                onDismiss = { showIncomeDialog = false },
+                onSave = { amount -> incomemain = amount }
             )
+
+
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(text = "Recent Transactions", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(Color(0xFFE8F5E9))
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                modifier = Modifier.fillMaxWidth().height(80.dp).clip(MaterialTheme.shapes.medium).background(Color(0xFFE8F5E9)).padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    // Left side - transaction details
+                Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text(
-                            text = "Domino's Pizza",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            color = Color(0xFF1B5E20)
-                        )
-                        Text(
-                            text = "₹350 • Food & Dining",
-                            fontSize = 14.sp,
-                            color = Color.DarkGray
-                        )
+                        Text("Domino's Pizza", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF2E7D32))
+                        Text("₹350 • Food & Dining", fontSize = 14.sp, color = Color.DarkGray)
                     }
-
-                    // Right side - show all button
-                    Button(
-                        onClick = {
-                            Toast.makeText(context, "Show All Clicked", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50),
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Text(text = "Show All", fontSize = 13.sp)
+                    Button(onClick = { Toast.makeText(context, "Show All Clicked", Toast.LENGTH_SHORT).show() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32), contentColor = Color.White), modifier = Modifier.height(36.dp)) {
+                        Text("Show All", fontSize = 13.sp)
                     }
                 }
             }
-
-
-
         }
     }
 }
 
 @Composable
-fun DashboardGrid() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard(
-                title = "Expenses",
-                t1 = "₹10,000",
-                gradientColors = listOf(Color(0xFFD21E60), Color(0xFFD0839F)),
-                modifier = Modifier.weight(1f).height(100.dp)
-            )
-            GradientDashboardCard(
-                title = "Remaining",
-                t1 = "₹20,000",
-                gradientColors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)),
-                modifier = Modifier.weight(1f).height(100.dp)
-            )
-        }
+fun DashboardGrid(
+    expensemain: Int = 0,
+    remaining: Int = 0,
+    budetmain: Int = 0,
+    incomemain: Int = 0,
 
+) {
+
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard(
-                title = "Budget",
-                t1 = "₹80,000",
-                gradientColors = listOf(Color(0xFF8E24AA), Color(0xFFCE93D8)),
-                modifier = Modifier.weight(1f).height(100.dp)
-            )
-            GradientDashboardCard(
-                title = "Income",
-                t1 = "₹1,00,000",
-                gradientColors = listOf(Color(0xFFFF9800), Color(0xFFFFCC80)),
-                modifier = Modifier.weight(1f).height(100.dp)
-            )
+            GradientDashboardCard("Expenses",
+                expensemain.toString(), listOf(Color(0xFFB71C1C), Color(0xFFE57373)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFF0277BD), Color(0xFF4FC3F7)), Modifier.weight(1f).height(100.dp))
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFF6A1B9A), Color(0xFFBA68C8)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFF57C00), Color(0xFFFFB74D)), Modifier.weight(1f).height(100.dp))
         }
     }
 }
