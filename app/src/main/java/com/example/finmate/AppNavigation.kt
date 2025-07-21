@@ -33,11 +33,14 @@ fun AppNavigation(
     NavHost(
         navController = navController,
         modifier = modifier,
-        startDestination = firstPage
+        startDestination = "splash"
     ) {
         composable("auth") {
             AuthScreen(navController)
         }
+        composable("splash") {
+            SplashScreen(navController) }
+
         composable("login") {
             LoginScreen(navController)
         }
