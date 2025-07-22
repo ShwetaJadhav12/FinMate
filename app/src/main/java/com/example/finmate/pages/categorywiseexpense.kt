@@ -1,6 +1,12 @@
 package com.example.finmate.pages
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.finmate.GlobNavigation.navController
 import com.example.finmate.components.ExpenseCard
+import com.example.finmate.components.GradientDashboardCard
 import com.example.finmate.components.fetchExpensesByCategory
 import com.example.finmate.model.Expenses
 
@@ -24,7 +31,7 @@ fun CategoryExpensesScreen(categoryName: String) {
     var isLoading by remember { mutableStateOf(true) }
     val context = LocalContext.current
 
-    // 🔁 Fetch category-specific expenses from Firestore
+    // 🔁 Fetch expenses by category
     LaunchedEffect(categoryName) {
         fetchExpensesByCategory(
             category = categoryName,
@@ -39,7 +46,6 @@ fun CategoryExpensesScreen(categoryName: String) {
         )
     }
 
-    // 🧾 UI layout with Top Bar and list
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,16 +55,43 @@ fun CategoryExpensesScreen(categoryName: String) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF80B2AE))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3198F1))
             )
         }
     ) { innerPadding ->
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(innerPadding).padding(16.dp))
-        } else {
-            LazyColumn(modifier = Modifier.padding(innerPadding)) {
-                items(expenses) { expense ->
-                    ExpenseCard(expense = expense)
+        Column(modifier = Modifier.padding(innerPadding).padding(12.dp)) {
+
+            // ✅ Add Budget & Spent cards here
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFD6EAF8))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Budget")
+                        Text("₹ 5000") // Replace with dynamic value if needed
+                    }
+                }
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF9E79F))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Spent")
+                        Text("₹ ${expenses.sumOf { it.amount.toInt() }}")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            } else {
+                LazyColumn {
+                    items(expenses) { expense ->
+                        ExpenseCard(expense = expense)
+                    }
                 }
             }
         }

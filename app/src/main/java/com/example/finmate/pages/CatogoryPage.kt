@@ -78,7 +78,7 @@ fun CategoryGridScreen() {
                 },
 
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF80B2AE),
+                    containerColor = Color(0xFF3198F1),
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White
                 )
@@ -145,8 +145,8 @@ fun CategoryGridScreen() {
                             .background(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
-                                        Color(0xFF80B2AE),
-                                        Color(0xFF577C77)
+                                        Color(0xFFE3F2FD),
+                                        Color(0xFFE3F2FD)
                                     )
                                 )
                             )
@@ -170,7 +170,7 @@ fun CategoryGridScreen() {
                             Text(
                                 text = category.name,
                                 fontSize = 20.sp,
-                                color = Color.White,
+                                color = Color(0xFF0D47A1),
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )

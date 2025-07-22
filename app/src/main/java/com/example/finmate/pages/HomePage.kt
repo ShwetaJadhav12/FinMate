@@ -163,11 +163,11 @@ fun HomeScreen(navController: NavHostController) {
                         Text(text = initial, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2E7D32))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFFF4F8F4)) {
+            NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(Icons.Default.Home, Icons.Default.Add, Icons.Default.Favorite, Icons.Default.Settings)
                 items.forEachIndexed { index, item ->
@@ -221,7 +221,7 @@ fun HomeScreen(navController: NavHostController) {
                 GradientButton(
                     text = "Predict Budget",
                     onClick = { Toast.makeText(context, "Predict Budget Clicked", Toast.LENGTH_SHORT).show() },
-                    gradientColors = listOf(Color(0xFF1B5E20), Color(0xFF66BB6A)),
+                    gradientColors = listOf(Color(0xFF348791), Color(0xFF58AFB9)),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -237,7 +237,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(18.dp))
             GradientBox(
                 text = "Top Spending Categories: Food, Groceries",
-                gradientColors = listOf(Color(0xFF004D40), Color(0xFF26A69A)),
+                gradientColors = listOf(Color(0xFF468FB4), Color(0xFF85C7C1)),
                 fontSize = 16.sp,
                 fontColor = Color.White,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
@@ -248,7 +248,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                val buttonColors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50), contentColor = Color.White)
+                val buttonColors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3), contentColor = Color.White)
                 Button(onClick = { showDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
                     Text("Expenses", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
@@ -278,10 +278,13 @@ fun HomeScreen(navController: NavHostController) {
             ) {
                 Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Domino's Pizza", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF2E7D32))
+                        Text("Domino's Pizza", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(
+                            0xFF68A2D5
+                        )
+                        )
                         Text("₹350 • Food & Dining", fontSize = 14.sp, color = Color.DarkGray)
                     }
-                    Button(onClick = { Toast.makeText(context, "Show All Clicked", Toast.LENGTH_SHORT).show() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32), contentColor = Color.White), modifier = Modifier.height(36.dp)) {
+                    Button(onClick = { Toast.makeText(context, "Show All Clicked", Toast.LENGTH_SHORT).show() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12648D), contentColor = Color.White), modifier = Modifier.height(36.dp)) {
                         Text("Show All", fontSize = 13.sp)
                     }
                 }
@@ -303,12 +306,21 @@ fun DashboardGrid(
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GradientDashboardCard("Expenses",
-                expensemain.toString(), listOf(Color(0xFFB71C1C), Color(0xFFE57373)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFF0277BD), Color(0xFF4FC3F7)), Modifier.weight(1f).height(100.dp))
+                expensemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFFB8BABB), Color(
+                0xFFB8BABB
+            )
+            ), Modifier.weight(1f).height(100.dp))
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFF6A1B9A), Color(0xFFBA68C8)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFF57C00), Color(0xFFFFB74D)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFFB8BABB), Color(
+                0xFFB8BABB
+            )
+            ), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFB8BABB), Color(
+                0xFFB8BABB
+            )
+            ), Modifier.weight(1f).height(100.dp))
         }
     }
 }

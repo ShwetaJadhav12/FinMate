@@ -27,7 +27,7 @@ fun GradientDashboardCard(
     t1: String,
     gradientColors: List<Color>,
     modifier: Modifier = Modifier,
-    titleColor: Color = Color.White,
+    titleColor: Color = Color(0xFF174E80),
     onClick: () -> Unit = {}
 ) {
     Box(
