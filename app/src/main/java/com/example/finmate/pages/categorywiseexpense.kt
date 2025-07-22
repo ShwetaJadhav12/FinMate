@@ -1,52 +1,45 @@
 package com.example.finmate.pages
 
-import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.example.finmate.GlobNavigation.navController
 import com.example.finmate.components.ExpenseCard
+import com.example.finmate.components.fetchExpensesByCategory
 import com.example.finmate.model.Expenses
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryExpensesScreen(categoryName: String) {
     var expenses by remember { mutableStateOf<List<Expenses>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    val context = LocalContext.current
 
-    // Fetch expenses
+    // 🔁 Fetch category-specific expenses from Firestore
     LaunchedEffect(categoryName) {
-        FirebaseFirestore.getInstance()
-            .collection("expenses")
-            .whereEqualTo("categories", categoryName)
-            .get()
-            .addOnSuccessListener { result ->
-                expenses = result.map {
-                    it.toObject(Expenses::class.java)
-                }
+        fetchExpensesByCategory(
+            category = categoryName,
+            onSuccess = {
+                expenses = it
+                isLoading = false
+            },
+            onFailure = {
+                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                isLoading = false
             }
-            .addOnFailureListener {
-                Log.e("FetchExpenses", "Error: ${it.message}")
-            }
+        )
     }
 
+    // 🧾 UI layout with Top Bar and list
     Scaffold(
         topBar = {
             TopAppBar(
@@ -60,10 +53,13 @@ fun CategoryExpensesScreen(categoryName: String) {
             )
         }
     ) { innerPadding ->
-        LazyColumn(modifier = Modifier.padding(innerPadding)) {
-            items(expenses) {
-                expense ->
-                ExpenseCard(expense = expense)
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.padding(innerPadding).padding(16.dp))
+        } else {
+            LazyColumn(modifier = Modifier.padding(innerPadding)) {
+                items(expenses) { expense ->
+                    ExpenseCard(expense = expense)
+                }
             }
         }
     }
