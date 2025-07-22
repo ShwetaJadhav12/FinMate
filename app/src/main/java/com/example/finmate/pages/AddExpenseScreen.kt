@@ -1,11 +1,8 @@
 package com.example.finmate.pages
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,9 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.finmate.components.DateAndTimePicker
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
+import com.example.finmate.model.Expenses
+import saveExpenseToFirestore
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -35,10 +31,13 @@ import java.util.*
 fun AddExpenseScreen(navController: NavHostController) {
 
     // Form state
+    var date by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Food") }
     var note by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
 
     val categories = listOf("Food", "Transport", "Groceries", "Utilities", "Shopping", "Health", "Entertainment", "Others")
@@ -120,36 +119,37 @@ fun AddExpenseScreen(navController: NavHostController) {
                 }
             }
 
-            DateAndTimePicker()
+            DateAndTimePicker(
+                date = date,
+                time = time,
+                onDateChange = { date = it },
+                onTimeChange = { time = it }
+            )
 
-            // Save Button
-            Button(
-                onClick = {
-//                    if (title.isNotBlank() && amount.isNotBlank() && date != "Select Date") {
-//                        saveExpenseToFirestore(
-//                            title,
-//                            amount.toDoubleOrNull() ?: 0.0,
-//                            selectedCategory,
-//                            note,
-//                            "$date $time",
-//                            context
-//                        )
-//                        navController.popBackStack()
-//                    } else {
-//                        Toast.makeText(context, "Please fill all required fields", Toast.LENGTH_SHORT).show()
-//                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF388E3C),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Text("Save Expense", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            val context = LocalContext.current
+
+            Button(onClick = {
+                val expense = Expenses(
+                    title = title,       // your state variables
+                    amount = amount,
+                    category = selectedCategory,
+                    date = date,
+                    time = time
+                )
+
+                saveExpenseToFirestore(expense,
+                    onSuccess = {
+                        Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = {
+                        Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }) {
+                Text("Save")
             }
+
+
         }
     }
 }

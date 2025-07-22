@@ -3,6 +3,7 @@ package com.example.finmate.pages
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -129,7 +130,10 @@ fun CategoryGridScreen() {
             itemsIndexed(categories) { _, category ->
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth().clickable {
+                            navController.navigate("categoryExpenses/${category.name}")
+
+                        }
                         .aspectRatio(1f)
                         .shadow(8.dp, RoundedCornerShape(20.dp)),
                     shape = RoundedCornerShape(20.dp),

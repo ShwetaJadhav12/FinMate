@@ -167,7 +167,7 @@ fun HomeScreen(navController: NavHostController) {
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFF1B5E20)) {
+            NavigationBar(containerColor = Color(0xFFF4F8F4)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(Icons.Default.Home, Icons.Default.Add, Icons.Default.Favorite, Icons.Default.Settings)
                 items.forEachIndexed { index, item ->
