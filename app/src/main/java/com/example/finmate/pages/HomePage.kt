@@ -144,9 +144,12 @@ fun HomeScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
+
                 title = {
                     Text("FinMate", color = Color.White, fontWeight = FontWeight.SemiBold)
                 },
+
+
                 actions = {
                     Box(
                         modifier = Modifier
@@ -163,6 +166,7 @@ fun HomeScreen(navController: NavHostController) {
                         Text(text = initial, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
+
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
             )
         },

@@ -56,7 +56,7 @@ fun AddExpenseScreen(navController: NavHostController) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF4CAF50))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3198F1))
             )
         },
         containerColor = Color(0xFFF7FFF9)
@@ -145,7 +145,11 @@ fun AddExpenseScreen(navController: NavHostController) {
                         Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
                 )
-            }) {
+            },modifier = Modifier.fillMaxWidth(),
+                colors =ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF174E80),
+                    contentColor = Color.White
+                ) ) {
                 Text("Save")
             }
 

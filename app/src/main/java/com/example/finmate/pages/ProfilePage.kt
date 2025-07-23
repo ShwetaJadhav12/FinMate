@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.finmate.GlobNavigation
+import com.example.finmate.components.EditProfile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -37,7 +38,7 @@ fun ProfilePage(
     val context = LocalContext.current
     var selectedIndex by remember { mutableStateOf(3) } // Default to Category page
 
-
+    var showeditpage by remember { mutableStateOf(false) }
     var userName by remember { mutableStateOf("User Name") }
     var userEmail by remember { mutableStateOf("user@example.com") }
 
@@ -66,7 +67,7 @@ fun ProfilePage(
                 title = { Text("Profile", fontSize = 20.sp) },
 
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4CAF50),
+                    containerColor = Color(0xFF2196F3),
                     titleContentColor = Color.White
                 )
             )
@@ -115,7 +116,7 @@ fun ProfilePage(
                     .clip(CircleShape)
                     .background(
                         brush = Brush.linearGradient(
-                            listOf(Color(0xFF4CAF50), Color(0xFF81C784))
+                            listOf(Color(0xFF2196F3), Color(0xFF13426C))
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -132,17 +133,41 @@ fun ProfilePage(
             Text(text = userEmail, fontSize = 16.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(32.dp))
 
+            if (showeditpage) {
+                EditProfile(
+                    showEditProfile = true,
+                    onDismiss = { showeditpage = false },
+                    onSave = { name, email ->
+                        Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
+                        showeditpage = false
+                    }
+                )
+            }
+
             Button(
                 onClick = {
-                    Toast.makeText(context, "Edit Profile Clicked", Toast.LENGTH_SHORT).show()
+                    showeditpage = true
+
                 },
                 modifier = Modifier.fillMaxWidth(0.8f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF11446C))
             ) {
                 Text("Edit Profile")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    Toast.makeText(context, "Get Your Summary card", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth(0.8f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF11446C))
+            ) {
+                Text("summary card")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
 
             Button(
                 onClick = {
