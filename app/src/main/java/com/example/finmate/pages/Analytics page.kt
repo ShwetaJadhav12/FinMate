@@ -1,5 +1,6 @@
 package com.example.finmate.pages
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,28 +92,47 @@ fun AnalyticsPage(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "This Month: ₹12,450",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1B5E20)
-            )
+            Button(
+                onClick = {
+//                    Toast.makeText(context,"cliked on weekly bar chart")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF11446C),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Weekly Bar chart")
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+//                    Toast.makeText(context,"cliked on weekly bar chart")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF11446C),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Monthly Analysis")
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = "Most spent on: Food",
-                fontSize = 16.sp,
-                color = Color(0xFF757575)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "You saved ₹3,000 compared to last month!",
-                fontSize = 16.sp,
-                color = Color(0xFF2E7D32)
-            )
+            Button(
+                onClick = {
+//                    Toast.makeText(context,"cliked on weekly bar chart")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF11446C),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Category wise pie chart analysis")
+            }
         }
     }
 }
