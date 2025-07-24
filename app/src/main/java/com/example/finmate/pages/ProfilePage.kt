@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.finmate.GlobNavigation
-import com.example.finmate.components.EditProfile
+import com.example.finmate.components.EditProfileDialog
+import com.example.finmate.components.fetchUserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -39,26 +40,17 @@ fun ProfilePage(
     var selectedIndex by remember { mutableStateOf(3) } // Default to Category page
 
     var showeditpage by remember { mutableStateOf(false) }
-    var userName by remember { mutableStateOf("User Name") }
-    var userEmail by remember { mutableStateOf("user@example.com") }
+    var userName by remember { mutableStateOf("Loading...") }
+    var userEmail by remember { mutableStateOf("Loading...") }
 
-    // Fetch Firebase user data
     LaunchedEffect(Unit) {
-        val user = FirebaseAuth.getInstance().currentUser
-        user?.let {
-            userEmail = it.email ?: "No Email"
-            val uid = it.uid
-
-            FirebaseFirestore.getInstance().collection("users")
-                .document(uid)
-                .get()
-                .addOnSuccessListener { doc ->
-                    userName = doc.getString("name") ?: "User Name"
-                }
-                .addOnFailureListener {
-                    Toast.makeText(context, "Failed to load profile", Toast.LENGTH_SHORT).show()
-                }
-        }
+        fetchUserData(
+            onSuccess = {
+                userName = it.name
+                userEmail = it.email
+            },
+            onFailure = {}
+        )
     }
 
     Scaffold(
@@ -134,16 +126,14 @@ fun ProfilePage(
             Spacer(modifier = Modifier.height(32.dp))
 
             if (showeditpage) {
-                EditProfile(
-                    showEditProfile = true,
+                EditProfileDialog(
                     onDismiss = { showeditpage = false },
-                    onSave = { name, email ->
-                        Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
-                        showeditpage = false
+                    onUserUpdated = {
+                        userName = it.name
+                        userEmail = it.email
                     }
                 )
             }
-
             Button(
                 onClick = {
                     showeditpage = true
