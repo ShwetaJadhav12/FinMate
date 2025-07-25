@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.airbnb.lottie.compose.*
+import com.example.finmate.GlobNavigation.navController
+
 @Composable
 fun ExpenseEntryOptionsDialog(
     onDismiss: () -> Unit,
@@ -69,7 +71,7 @@ fun ExpenseEntryOptionsDialog(
                 }
 
                 Button(
-                    onClick = onScanReceipt,
+                    onClick = {  },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -80,6 +82,7 @@ fun ExpenseEntryOptionsDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Scan & Add Receipt", color = Color.White)
                 }
+
 
                 Spacer(modifier = Modifier.height(8.dp))
 
