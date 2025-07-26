@@ -71,7 +71,9 @@ fun ExpenseEntryOptionsDialog(
                 }
 
                 Button(
-                    onClick = {  },
+                    onClick = {
+                        navController.navigate("speechtotext")
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -80,7 +82,7 @@ fun ExpenseEntryOptionsDialog(
                 ) {
                     Icon(Icons.Default.AddCircle, contentDescription = "Scan", tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Scan & Add Receipt", color = Color.White)
+                    Text("Speak and Add", color = Color.White)
                 }
 
 

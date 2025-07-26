@@ -18,6 +18,7 @@ import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
 import com.example.finmate.pages.ProfilePage
 import com.example.finmate.pages.SignupScreen
+import com.example.finmate.speechtotext.SpeechToTextScreen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
@@ -96,6 +97,9 @@ fun AppNavigation(
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
             CategoryExpensesScreen(categoryName)
+        }
+        composable("speechtotext") {
+            SpeechToTextScreen(navController)
         }
 
 
