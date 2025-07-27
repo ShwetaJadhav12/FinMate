@@ -62,7 +62,7 @@ fun SpeechToTextScreen(
                     }
                 },
                 colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color(0xFF2C3E50),
+                    containerColor = Color(0xFF2196F3),
                     titleContentColor = Color.White
                 )
             )
@@ -73,7 +73,8 @@ fun SpeechToTextScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(16.dp),
-                verticalArrangement = Arrangement.Top
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
             ) {
                 Button(onClick = {
                     val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -82,7 +83,14 @@ fun SpeechToTextScreen(
                         putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your expense details")
                     }
                     speechLauncher.launch(intent)
-                }) {
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF12648D),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.8f),
+
+                    ) {
                     Text("Speak Now")
                 }
 
