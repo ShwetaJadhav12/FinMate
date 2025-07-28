@@ -1,5 +1,6 @@
 package com.example.finmate.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.Dialog
@@ -13,9 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.airbnb.lottie.compose.*
 import com.example.finmate.GlobNavigation.navController
+import com.example.finmate.R
 
 @Composable
 fun ExpenseEntryOptionsDialog(
@@ -83,6 +87,26 @@ fun ExpenseEntryOptionsDialog(
                     Icon(Icons.Default.AddCircle, contentDescription = "Scan", tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Speak and Add", color = Color.White)
+                }
+
+                Button(
+                    onClick = {
+                        navController.navigate("imagetotext")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2980B9)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.baseline_upload_24),
+                        contentDescription = "Scan",
+                        modifier = Modifier.size(24.dp), // Optional
+                        colorFilter = ColorFilter.tint(Color.White)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Scan UPI screenshot and add", color = Color.White)
                 }
 
 

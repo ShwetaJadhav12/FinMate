@@ -18,12 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.finmate.GlobNavigation
+import com.example.finmate.R
 import com.example.finmate.components.EditProfileDialog
 import com.example.finmate.components.fetchUserData
 import com.google.firebase.auth.FirebaseAuth
@@ -65,33 +68,53 @@ fun ProfilePage(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFFF7F7F7)) {
+            NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
-                    Icons.Default.Home,
-                    Icons.Default.Add,
-                    Icons.Default.Favorite,
-                    Icons.Default.Settings
+                    Icons.Default.Home, // Vector
+                    R.drawable.baseline_auto_graph_24, // Drawable
+                    R.drawable.baseline_category_24,
+                    Icons.Default.Settings // Vector
                 )
+
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
                             when (index) {
-                                0 -> GlobNavigation.navController.navigate("home") {
-                                    popUpTo("home") { inclusive = true }}
-                                1 -> GlobNavigation.navController.navigate("analytics")
-                                2 -> {GlobNavigation.navController.navigate("categorypage")} // Already on Category page
-                                3 -> {}
+                                0 -> navController.navigate("home")
+                                1 -> navController.navigate("analytics")
+                                2 -> navController.navigate("categorypage")
+                                3 -> navController.navigate("profilepage")
                             }
                         },
-                        icon = { Icon(icons[index], contentDescription = item) },
+                        icon = {
+                            if (icons[index] is ImageVector) {
+                                Icon(
+                                    imageVector = icons[index] as ImageVector,
+                                    contentDescription = item
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = icons[index] as Int),
+                                    contentDescription = item
+                                )
+                            }
+                        },
                         label = { Text(item, fontSize = 12.sp) },
-                        alwaysShowLabel = true
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color(0xFF2196F3),
+                            selectedIconColor = Color(0xFF194365),
+                            selectedTextColor = Color(0xFF194365),
+                            unselectedIconColor = Color.White,
+                            unselectedTextColor = Color.White
+                        )
                     )
                 }
             }
+
         }
     ) { paddingValues ->
         Column(
@@ -140,7 +163,7 @@ fun ProfilePage(
 
                 },
                 modifier = Modifier.fillMaxWidth(0.8f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF11446C))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12648D))
             ) {
                 Text("Edit Profile")
             }
@@ -151,7 +174,7 @@ fun ProfilePage(
                     Toast.makeText(context, "Get Your Summary card", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth(0.8f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF11446C))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12648D))
             ) {
                 Text("summary card")
             }

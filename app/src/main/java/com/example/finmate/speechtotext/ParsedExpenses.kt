@@ -1,18 +1,13 @@
 package com.example.finmate.speechtotext
 
+import com.example.finmate.model.Expenses
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
-data class ExtractedInfo(
-    val title: String,
-    val amount: String,
-    val category: String,
-    val date: String,
-    val time: String
-)
 
-fun parseSpeech(text: String): ExtractedInfo {
+
+fun parseSpeech(text: String): Expenses {
     val words = text.lowercase().split(" ")
     val fullText = text.lowercase()
 
@@ -146,7 +141,7 @@ fun parseSpeech(text: String): ExtractedInfo {
     }
 
 
-    return ExtractedInfo(
+    return Expenses(
         title = title,
         amount = amount,
         category = category,

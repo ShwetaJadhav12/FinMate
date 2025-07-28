@@ -2,9 +2,11 @@ package com.example.finmate
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -101,6 +103,8 @@ fun AppNavigation(
         composable("speechtotext") {
             SpeechToTextScreen(navController)
         }
+
+
 
 
 

@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
@@ -22,11 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.R
 import com.example.finmate.components.AddCategoryBudgetForm
 import com.example.finmate.components.AddIncomeToDashBoard
 import com.example.finmate.components.AddMonthlyBudgetForm
@@ -173,7 +178,13 @@ fun HomeScreen(navController: NavHostController) {
         bottomBar = {
             NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
-                val icons = listOf(Icons.Default.Home, Icons.Default.Add, Icons.Default.Favorite, Icons.Default.Settings)
+                val icons = listOf(
+                    Icons.Default.Home, // Vector
+                    R.drawable.baseline_auto_graph_24, // Drawable
+                    R.drawable.baseline_category_24,
+                    Icons.Default.Settings // Vector
+                )
+
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -186,25 +197,46 @@ fun HomeScreen(navController: NavHostController) {
                                 3 -> navController.navigate("profilepage")
                             }
                         },
-                        icon = { Icon(icons[index], contentDescription = item) },
+                        icon = {
+                            if (icons[index] is ImageVector) {
+                                Icon(
+                                    imageVector = icons[index] as ImageVector,
+                                    contentDescription = item
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = icons[index] as Int),
+                                    contentDescription = item
+                                )
+                            }
+                        },
                         label = { Text(item, fontSize = 12.sp) },
-                        alwaysShowLabel = true
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color(0xFF2196F3),
+                            selectedIconColor = Color(0xFF194365),
+                            selectedTextColor = Color(0xFF194365),
+                            unselectedIconColor = Color.White,
+                            unselectedTextColor = Color.White
+                        )
                     )
                 }
             }
+
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(16.dp).verticalScroll(rememberScrollState())
+
                 .fillMaxSize()
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFE8F5E9))
+                    .background(Color(0xFFB8BABB))
                     .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -225,7 +257,7 @@ fun HomeScreen(navController: NavHostController) {
                 GradientButton(
                     text = "Predict Budget",
                     onClick = { Toast.makeText(context, "Predict Budget Clicked", Toast.LENGTH_SHORT).show() },
-                    gradientColors = listOf(Color(0xFF348791), Color(0xFF58AFB9)),
+                    gradientColors = listOf(Color(0xFF12648D), Color(0xFF12648D)),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -241,7 +273,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(18.dp))
             GradientBox(
                 text = "Top Spending Categories: Food, Groceries",
-                gradientColors = listOf(Color(0xFF468FB4), Color(0xFF85C7C1)),
+                gradientColors = listOf(Color(0xFF12648D), Color(0xFF12648D)),
                 fontSize = 16.sp,
                 fontColor = Color.White,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
@@ -278,12 +310,12 @@ fun HomeScreen(navController: NavHostController) {
             Text(text = "Recent Transactions", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
 
             Box(
-                modifier = Modifier.fillMaxWidth().height(80.dp).clip(MaterialTheme.shapes.medium).background(Color(0xFFE8F5E9)).padding(horizontal = 16.dp, vertical = 10.dp)
+                modifier = Modifier.fillMaxWidth().height(80.dp).clip(MaterialTheme.shapes.medium).background(Color(0xFFB8BABB)).padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text("Domino's Pizza", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(
-                            0xFF68A2D5
+                            0xFF133C60
                         )
                         )
                         Text("₹350 • Food & Dining", fontSize = 14.sp, color = Color.DarkGray)

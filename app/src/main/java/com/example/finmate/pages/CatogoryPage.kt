@@ -24,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.finmate.GlobNavigation.navController
+import com.example.finmate.R
+import com.example.finmate.components.BottomNavBarMaterial3
 import com.example.finmate.model.Category
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -86,34 +90,53 @@ fun CategoryGridScreen() {
         },
 
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFFF7F7F7)) {
+            NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
-                    Icons.Default.Home,
-                    Icons.Default.Add,
-                    Icons.Default.Favorite,
-                    Icons.Default.Settings
+                    Icons.Default.Home, // Vector
+                    R.drawable.baseline_auto_graph_24, // Drawable
+                    R.drawable.baseline_category_24,
+                    Icons.Default.Settings // Vector
                 )
+
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
                             when (index) {
-                                0 -> navController.navigate("home") {
-                                    popUpTo("home") { inclusive = true }
-                                }
+                                0 -> navController.navigate("home")
                                 1 -> navController.navigate("analytics")
-                                2 -> {} // Already on Category page
+                                2 -> navController.navigate("categorypage")
                                 3 -> navController.navigate("profilepage")
                             }
                         },
-                        icon = { Icon(icons[index], contentDescription = item) },
+                        icon = {
+                            if (icons[index] is ImageVector) {
+                                Icon(
+                                    imageVector = icons[index] as ImageVector,
+                                    contentDescription = item
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = icons[index] as Int),
+                                    contentDescription = item
+                                )
+                            }
+                        },
                         label = { Text(item, fontSize = 12.sp) },
-                        alwaysShowLabel = true
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color(0xFF2196F3),
+                            selectedIconColor = Color(0xFF194365),
+                            selectedTextColor = Color(0xFF194365),
+                            unselectedIconColor = Color.White,
+                            unselectedTextColor = Color.White
+                        )
                     )
                 }
             }
+
         },
 
         containerColor = MaterialTheme.colorScheme.background
@@ -161,12 +184,12 @@ fun CategoryGridScreen() {
                                 model = category.imageurl,
                                 contentDescription = category.name,
                                 modifier = Modifier
-                                    .size(100.dp)
+                                    .size(80.dp)
                                     .clip(CircleShape)
-                                    .border(2.dp, Color.White, CircleShape),
+                                    .border(1.dp, Color.White, CircleShape),
                                 contentScale = ContentScale.Crop
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = category.name,
                                 fontSize = 20.sp,

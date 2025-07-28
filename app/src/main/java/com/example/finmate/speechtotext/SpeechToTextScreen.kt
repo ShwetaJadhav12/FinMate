@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.finmate.model.Expenses
+import saveExpenseToFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -28,7 +30,7 @@ fun SpeechToTextScreen(
     navController: NavController
 ) {
     var spokenText by remember { mutableStateOf("") }
-    var extractedInfo by remember { mutableStateOf<ExtractedInfo?>(null) }
+    var extractedInfo by remember { mutableStateOf<Expenses?>(null) }
 
     val context = LocalContext.current
 
@@ -111,8 +113,13 @@ fun SpeechToTextScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(onClick = {
-                        Toast.makeText(context, "Saved locally!", Toast.LENGTH_SHORT).show()
-                    }) {
+                        saveExpenseToFirestore(info,
+                            onSuccess = {
+                                Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
+                            },
+                            onFailure = {
+                                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    })}) {
                         Text("Save")
                     }
                 }
