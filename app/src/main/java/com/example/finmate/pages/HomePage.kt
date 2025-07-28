@@ -1,9 +1,7 @@
 package com.example.finmate.pages
 
-import android.annotation.SuppressLint
 import android.os.Build
 import android.widget.Toast
-import java.time.format.TextStyle
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,8 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -30,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
 import com.example.finmate.components.AddCategoryBudgetForm
@@ -39,18 +36,20 @@ import com.example.finmate.components.ExpenseEntryOptionsDialog
 import com.example.finmate.components.GradientBox
 import com.example.finmate.components.GradientButton
 import com.example.finmate.components.GradientDashboardCard
+import com.example.finmate.viewmodel.MonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
+    val monthViewModel: MonthViewModel = viewModel()
+    val selectedMonth by monthViewModel.selectedMonth
+
     val context = LocalContext.current
     var userName by remember { mutableStateOf("User") }
     val initial = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
@@ -121,8 +120,11 @@ fun HomeScreen(navController: NavHostController) {
             text = {
                 AddMonthlyBudgetForm(
                     onSave = { showMonthlyDialog = false },
-                    onCancel = { showMonthlyDialog = false }
-                )
+                    onCancel = { showMonthlyDialog = false },
+                    selectedMonth = selectedMonth,
+                    onMonthSelected = { newMonth -> monthViewModel.selectedMonth.value = newMonth },
+
+                    )
             },
             confirmButton = {},
             dismissButton = {}
@@ -136,7 +138,8 @@ fun HomeScreen(navController: NavHostController) {
             text = {
                 AddCategoryBudgetForm(
                     onSave = { showCategoryDialog = false },
-                    onCancel = { showCategoryDialog = false }
+                    onCancel = { showCategoryDialog = false },
+                    selectedMonth = selectedMonth
                 )
             },
             confirmButton = {},
@@ -299,11 +302,14 @@ fun HomeScreen(navController: NavHostController) {
                     Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
+
             AddIncomeToDashBoard(
                 showDialog = showIncomeDialog,
                 onDismiss = { showIncomeDialog = false },
-                onSave = { amount -> incomemain = amount }
+                onSave = { incomemain = it },
+                selectedMonth = selectedMonth // 🔁 passed from shared state
             )
+
 
 
             Spacer(modifier = Modifier.height(18.dp))

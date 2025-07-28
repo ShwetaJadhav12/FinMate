@@ -1,44 +1,76 @@
 package com.example.finmate.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddIncomeToDashBoard(
     showDialog: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Int) -> Unit
+    onSave: (Int) -> Unit,
+    selectedMonth: String // ✅ Comes from HomeScreen
 ) {
     var amount by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Add Income") },
+            title = { Text("Add Income for ${if (selectedMonth.isNotBlank()) selectedMonth else "Selected Month"}") },
             text = {
                 Column {
                     OutlinedTextField(
                         value = amount,
-                        onValueChange = { amount = it },
-                        label = { Text("Enter Amount") },
+                        onValueChange = {
+                            amount = it
+                            errorMessage = null
+                        },
+                        label = { Text("Enter Amount (₹)") },
+                        isError = errorMessage != null,
                         singleLine = true
                     )
+                    errorMessage?.let {
+                        Text(text = it, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val value = amount.toIntOrNull()
-                    if (value != null) {
-                        onSave(value)
-                        onDismiss()
+                    val income = amount.toIntOrNull()
+                    if (income == null || income <= 0) {
+                        errorMessage = "Please enter a valid positive number"
+                        return@TextButton
+                    }
+
+                    if (selectedMonth.isBlank()) {
+                        errorMessage = "No month selected. Please select a month from Budget."
+                        return@TextButton
+                    }
+
+                    val db = FirebaseFirestore.getInstance()
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+                    if (userId != null) {
+                        val incomeMap = mapOf("income" to income.toDouble())
+
+                        db.collection("users")
+                            .document(userId)
+                            .collection("summary_data")
+                            .document(selectedMonth) // ✅ storing by month
+                            .set(incomeMap, SetOptions.merge()) // 🔁 merge to keep budget/expenses
+                            .addOnSuccessListener {
+                                onSave(income) // notify parent
+                                onDismiss() // close dialog
+                            }
+                    } else {
+                        errorMessage = "User not logged in"
                     }
                 }) {
                     Text("Save")

@@ -94,7 +94,11 @@ fun AppNavigation(
 
 
         composable("addExpense") {
-            AddExpenseScreen(navController)
+            AddExpenseScreen(
+                navController,
+                onBack = { navController.popBackStack() },
+                selectedMonth = TODO()
+            )
         }
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""

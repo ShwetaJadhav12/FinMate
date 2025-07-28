@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 fun saveExpenseToFirestore(
     expense: Expenses,
+    selectedMonth: String, // <-- new parameter
     onSuccess: () -> Unit,
     onFailure: (Exception) -> Unit
 ) {
@@ -13,6 +14,8 @@ fun saveExpenseToFirestore(
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
+            .collection("summary_data")
+            .document(selectedMonth)
             .collection("expenses")
             .add(expense)
             .addOnSuccessListener { onSuccess() }
