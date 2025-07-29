@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.finmate.components.DateAndTimePicker
-import com.example.finmate.components.calculateAndSaveTotalExpensesForMonth
 import com.example.finmate.model.Expenses
 import saveExpenseToFirestore
 import java.util.*
@@ -30,7 +29,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavHostController,
-                     selectedMonth: String) {
+                     ) {
 
     // Form state
     var date by remember { mutableStateOf("") }
@@ -141,7 +140,6 @@ fun AddExpenseScreen(navController: NavHostController,
 
                 saveExpenseToFirestore(
                     expense = expense,
-                    selectedMonth = selectedMonth, // ✅ Pass the selected month here!
                     onSuccess = {
                         Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
@@ -150,8 +148,6 @@ fun AddExpenseScreen(navController: NavHostController,
                         Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
                 )
-
-                calculateAndSaveTotalExpensesForMonth(selectedMonth) //
 
             },modifier = Modifier.fillMaxWidth(),
                 colors =ButtonDefaults.buttonColors(

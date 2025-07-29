@@ -1,6 +1,7 @@
 package com.example.finmate.speechtotext
 
 
+import android.app.Activity
 import android.content.Intent
 import android.speech.RecognizerIntent
 import android.widget.Toast
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -37,7 +39,7 @@ fun SpeechToTextScreen(
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
+        if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
             val resultText = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0)
             resultText?.let {
@@ -76,7 +78,7 @@ fun SpeechToTextScreen(
                     .padding(padding)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.Top,
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(onClick = {
                     val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -113,13 +115,16 @@ fun SpeechToTextScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(onClick = {
-                        saveExpenseToFirestore(info,
+                        saveExpenseToFirestore(
+                            info,
                             onSuccess = {
                                 Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
                             },
                             onFailure = {
-                                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                    })}) {
+                                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT)
+                                    .show()
+                            },
+                        )}) {
                         Text("Save")
                     }
                 }

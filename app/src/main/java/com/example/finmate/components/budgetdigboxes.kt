@@ -22,8 +22,6 @@ import java.util.*
 fun AddMonthlyBudgetForm(
     onSave: () -> Unit,
     onCancel: () -> Unit,
-    selectedMonth: String,
-    onMonthSelected: (String) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -90,13 +88,11 @@ fun AddMonthlyBudgetForm(
             TextButton(onClick = onCancel) { Text("Cancel") }
             Spacer(Modifier.width(8.dp))
             Button(onClick = {
-                val monthString = selectedDate?.let { "${it.year}-${it.monthValue.toString().padStart(2, '0')}" }
-                if (monthString != null && amount.isNotEmpty()) {
-                    saveSummaryDataForMonth(month = monthString, budget = amount)
-                    onMonthSelected(monthString)
-                    onSave()
+
                 }
-            }) { Text("Save") }
+            )
+        {
+                Text("Save") }
 
         }
     }
@@ -106,8 +102,6 @@ fun AddMonthlyBudgetForm(
 @SuppressLint("NewApi")
 @Composable
 fun AddCategoryBudgetForm(
-    selectedMonth: String,
-
     onSave: () -> Unit = {},
     onCancel: () -> Unit = {}
 ) {
@@ -117,7 +111,6 @@ fun AddCategoryBudgetForm(
     var expanded by remember { mutableStateOf(false) }
 
     val today = remember { LocalDate.now() }
-    val monthKey = selectedMonth
     val startDate = remember { today }
     val endDate = remember { today.plusDays(30) }
 
@@ -180,11 +173,6 @@ fun AddCategoryBudgetForm(
             TextButton(onClick = onCancel) { Text("Cancel") }
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = {
-                saveCategoryBudgetForMonth(
-                    month = startDate.toString(),
-                    category = category,
-                    amount = amount
-                )
 
             }) {
                 Text("Save")

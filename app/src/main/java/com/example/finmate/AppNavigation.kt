@@ -7,6 +7,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,12 +25,14 @@ import com.example.finmate.speechtotext.SpeechToTextScreen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
+@SuppressLint("ComposableDestinationInComposeScope")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
 
     modifier: Modifier = Modifier
 ) {
+
     val navController = rememberNavController()
     GlobNavigation.navController = navController
     val isLoggedIn = Firebase.auth.currentUser != null
@@ -53,7 +56,7 @@ fun AppNavigation(
         }
         composable("home") {
             HomeScreen(
-                navController
+                navController,
 
             )
         }
@@ -93,13 +96,12 @@ fun AppNavigation(
         }
 
 
-        composable("addExpense") {
+        composable("addexpense") {
             AddExpenseScreen(
                 navController,
-                onBack = { navController.popBackStack() },
-                selectedMonth = TODO()
             )
-        }
+            }
+
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
             CategoryExpensesScreen(categoryName)

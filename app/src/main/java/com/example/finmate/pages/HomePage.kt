@@ -36,7 +36,6 @@ import com.example.finmate.components.ExpenseEntryOptionsDialog
 import com.example.finmate.components.GradientBox
 import com.example.finmate.components.GradientButton
 import com.example.finmate.components.GradientDashboardCard
-import com.example.finmate.viewmodel.MonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -47,8 +46,6 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    val monthViewModel: MonthViewModel = viewModel()
-    val selectedMonth by monthViewModel.selectedMonth
 
     val context = LocalContext.current
     var userName by remember { mutableStateOf("User") }
@@ -121,11 +118,8 @@ fun HomeScreen(navController: NavHostController) {
                 AddMonthlyBudgetForm(
                     onSave = { showMonthlyDialog = false },
                     onCancel = { showMonthlyDialog = false },
-                    selectedMonth = selectedMonth,
-                    onMonthSelected = { newMonth -> monthViewModel.selectedMonth.value = newMonth },
+                )},
 
-                    )
-            },
             confirmButton = {},
             dismissButton = {}
         )
@@ -139,7 +133,6 @@ fun HomeScreen(navController: NavHostController) {
                 AddCategoryBudgetForm(
                     onSave = { showCategoryDialog = false },
                     onCancel = { showCategoryDialog = false },
-                    selectedMonth = selectedMonth
                 )
             },
             confirmButton = {},
@@ -307,7 +300,6 @@ fun HomeScreen(navController: NavHostController) {
                 showDialog = showIncomeDialog,
                 onDismiss = { showIncomeDialog = false },
                 onSave = { incomemain = it },
-                selectedMonth = selectedMonth // 🔁 passed from shared state
             )
 
 

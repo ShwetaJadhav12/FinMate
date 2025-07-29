@@ -15,7 +15,6 @@ fun AddIncomeToDashBoard(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     onSave: (Int) -> Unit,
-    selectedMonth: String // ✅ Comes from HomeScreen
 ) {
     var amount by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -23,7 +22,7 @@ fun AddIncomeToDashBoard(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Add Income for ${if (selectedMonth.isNotBlank()) selectedMonth else "Selected Month"}") },
+            title = { Text("Add Income") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -43,35 +42,32 @@ fun AddIncomeToDashBoard(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val income = amount.toIntOrNull()
-                    if (income == null || income <= 0) {
-                        errorMessage = "Please enter a valid positive number"
-                        return@TextButton
-                    }
-
-                    if (selectedMonth.isBlank()) {
-                        errorMessage = "No month selected. Please select a month from Budget."
-                        return@TextButton
-                    }
-
-                    val db = FirebaseFirestore.getInstance()
-                    val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-                    if (userId != null) {
-                        val incomeMap = mapOf("income" to income.toDouble())
-
-                        db.collection("users")
-                            .document(userId)
-                            .collection("summary_data")
-                            .document(selectedMonth) // ✅ storing by month
-                            .set(incomeMap, SetOptions.merge()) // 🔁 merge to keep budget/expenses
-                            .addOnSuccessListener {
-                                onSave(income) // notify parent
-                                onDismiss() // close dialog
-                            }
-                    } else {
-                        errorMessage = "User not logged in"
-                    }
+//                    val income = amount.toIntOrNull()
+//                    if (income == null || income <= 0) {
+//                        errorMessage = "Please enter a valid positive number"
+//                        return@TextButton
+//                    }
+//
+//
+//                    val db = FirebaseFirestore.getInstance()
+//                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+//
+//                    if (userId != null) {
+//                        val incomeMap = mapOf("income" to income.toDouble())
+//
+//                        db.collection("users")
+//                            .document(userId)
+//                            .set(incomeMap, SetOptions.merge()) // 🔁 merge to keep budget/expenses
+//                            .addOnSuccessListener {
+//                                onSave(income) // notify parent
+//                                onDismiss() // close dialog
+//                            }
+//                            .addOnFailureListener {
+//                                errorMessage = "Failed to save income: ${it.message}"
+//                            }
+//                    } else {
+//                        errorMessage = "User not logged in"
+//                    }
                 }) {
                     Text("Save")
                 }
