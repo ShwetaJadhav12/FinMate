@@ -52,8 +52,10 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.vision.common)
-    implementation(libs.play.services.mlkit.text.recognition.common)
-    implementation(libs.play.services.mlkit.text.recognition)
+    implementation(libs.text.recognition)
+
+//    implementation(libs.play.services.mlkit.text.recognition.common)
+//    implementation(libs.play.services.mlkit.text.recognition)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -64,6 +66,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.lottie.compose)
     implementation(libs.coil.compose)
+
+
+
+
 
 
 

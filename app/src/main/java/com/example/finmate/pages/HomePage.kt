@@ -1,5 +1,7 @@
 package com.example.finmate.pages
 
+import AddCategoryBudgetForm
+import AddMonthlyBudgetForm
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -29,13 +31,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
-import com.example.finmate.components.AddCategoryBudgetForm
 import com.example.finmate.components.AddIncomeToDashBoard
-import com.example.finmate.components.AddMonthlyBudgetForm
 import com.example.finmate.components.ExpenseEntryOptionsDialog
 import com.example.finmate.components.GradientBox
 import com.example.finmate.components.GradientButton
 import com.example.finmate.components.GradientDashboardCard
+import com.example.finmate.components.fetchMonthlyBudget
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -61,14 +62,25 @@ fun HomeScreen(navController: NavHostController) {
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         uid?.let {
+            // 1. Get user name
             Firebase.firestore.collection("users")
                 .document(it)
                 .get()
                 .addOnSuccessListener { doc ->
                     userName = doc.getString("name") ?: "User"
                 }
+
+            // 2. Get budget from Firestore
+            fetchMonthlyBudget(it) { fetchedBudget ->
+                budetmain = fetchedBudget
+                remaining = fetchedBudget - expensemain
+            }
+            println("Remaining: $remaining")
+            println("butemain : $budetmain")
+
         }
     }
+
     var showDialog by remember { mutableStateOf(false) }
     if (showDialog) {
         ExpenseEntryOptionsDialog(

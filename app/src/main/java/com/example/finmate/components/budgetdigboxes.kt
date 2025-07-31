@@ -1,7 +1,6 @@
-package com.example.finmate.components
-
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,6 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.finmate.components.saveMonthlyBudgetToFirebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import java.time.DateTimeException
 import java.time.LocalDate
 import java.util.*
 
@@ -22,6 +25,7 @@ import java.util.*
 fun AddMonthlyBudgetForm(
     onSave: () -> Unit,
     onCancel: () -> Unit,
+
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -40,7 +44,16 @@ fun AddMonthlyBudgetForm(
         )
     }
 
-    val endDate = selectedDate?.plusDays(30)
+    // Calculate end date: same day next month - 1
+    val endDate = selectedDate?.let { start ->
+        val nextMonth = start.plusMonths(1)
+        val endDay = start.dayOfMonth - 1
+        try {
+            nextMonth.withDayOfMonth(endDay)
+        } catch (e: DateTimeException) {
+            nextMonth.withDayOfMonth(nextMonth.lengthOfMonth())
+        }
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -88,15 +101,41 @@ fun AddMonthlyBudgetForm(
             TextButton(onClick = onCancel) { Text("Cancel") }
             Spacer(Modifier.width(8.dp))
             Button(onClick = {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                val budgetAmount = amount.toDoubleOrNull()
+                val start = selectedDate
+                val end = endDate
 
+                if (userId != null && budgetAmount != null && start != null && end != null) {
+                    saveMonthlyBudgetToFirebase(
+                        userId = userId,
+                        amount = budgetAmount.toString(),
+                        startDay = start.dayOfMonth,
+                        startDate = start,
+                        endDate = end,
+                        onSuccess = onSave,
+                        onFailure = { e ->
+                            Toast.makeText(
+                                context,
+                                "Failed to save: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        monthId = start.toString()
+                    )
+                } else {
+                    Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
                 }
-            )
-        {
-                Text("Save") }
-
+            }) {
+                Text("Save")
+            }
         }
     }
 }
+
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("NewApi")

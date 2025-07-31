@@ -3,9 +3,14 @@ agp = "8.7.1"
 cameraCamera2 = "1.4.2"
 charts = "1.0.0-alpha07"
 chartsDesktop = "1.5.1"
+chartsVersion = "1.0.0-alpha04"
 coilCompose = "2.6.0"
+compose = "1.13.0"
 composeCharts = "1.0.0-beta01"
+composeM3 = "1.13.0"
+core = "1.13.0"
 firebaseFirestoreKtxVersion = "24.11.0"
+githubCharts = "pichart-compose-1.0.0"
 googleFirebaseFirestoreKtx = "24.9.0"
 kotlin = "2.0.0"
 coreKtx = "1.16.0"
@@ -36,9 +41,13 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 charts = { module = "io.github.tehras:charts", version.ref = "charts" }
 charts-desktop = { module = "org.jetbrains.compose.charts:charts-desktop", version.ref = "chartsDesktop" }
+charts-vpichartcompose100 = { module = "com.github.tehras:charts", version.ref = "githubCharts" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 com-google-firebase-firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx" }
+compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "compose" }
 compose-charts = { module = "com.github.SmartToolFactory:Compose-Charts", version.ref = "composeCharts" }
+compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "composeM3" }
+core = { module = "com.patrykandpatrick.vico:core", version.ref = "core" }
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx" }
 firebase-firestore-ktx-v24110 = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
 firebase-firestore-ktx-v2490 = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "googleFirebaseFirestoreKtx" }
@@ -58,6 +67,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
+tehras-charts = { module = "com.github.tehras:charts", version.ref = "chartsVersion" }
 text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "textRecognition" }
 text-recognition-v1600 = { module = "com.google.mlkit:text-recognition", version.ref = "textRecognitionVersion" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai", version.ref = "firebaseAi" }
