@@ -13,7 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.finmate.components.saveMonthlyBudgetToFirebase
+import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.DateTimeException
@@ -25,7 +27,7 @@ import java.util.*
 fun AddMonthlyBudgetForm(
     onSave: () -> Unit,
     onCancel: () -> Unit,
-
+    sharedMonthViewModel: SharedMonthViewModel
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -36,7 +38,9 @@ fun AddMonthlyBudgetForm(
         DatePickerDialog(
             context,
             { _, year, month, dayOfMonth ->
-                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                val pickedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                selectedDate = pickedDate
+                sharedMonthViewModel.setSelectedMonthStartDate(pickedDate) // ✅ store in ViewModel
             },
             today.get(Calendar.YEAR),
             today.get(Calendar.MONTH),
@@ -44,7 +48,8 @@ fun AddMonthlyBudgetForm(
         )
     }
 
-    // Calculate end date: same day next month - 1
+
+    // Calculate end date
     val endDate = selectedDate?.let { start ->
         val nextMonth = start.plusMonths(1)
         val endDay = start.dayOfMonth - 1
@@ -107,10 +112,12 @@ fun AddMonthlyBudgetForm(
                 val end = endDate
 
                 if (userId != null && budgetAmount != null && start != null && end != null) {
+                    // ✅ Save start date to shared ViewModel
+                    sharedMonthViewModel.setSelectedMonthStartDate(start)
+
                     saveMonthlyBudgetToFirebase(
                         userId = userId,
                         amount = budgetAmount.toString(),
-                        startDay = start.dayOfMonth,
                         startDate = start,
                         endDate = end,
                         onSuccess = onSave,
@@ -121,7 +128,6 @@ fun AddMonthlyBudgetForm(
                                 Toast.LENGTH_SHORT
                             ).show()
                         },
-                        monthId = start.toString()
                     )
                 } else {
                     Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
@@ -132,8 +138,6 @@ fun AddMonthlyBudgetForm(
         }
     }
 }
-
-
 
 
 

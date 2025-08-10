@@ -3,6 +3,7 @@ package com.example.finmate.pages
 import AddCategoryBudgetForm
 import AddMonthlyBudgetForm
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -31,15 +32,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
-import com.example.finmate.components.AddIncomeToDashBoard
-import com.example.finmate.components.ExpenseEntryOptionsDialog
-import com.example.finmate.components.GradientBox
-import com.example.finmate.components.GradientButton
-import com.example.finmate.components.GradientDashboardCard
-import com.example.finmate.components.fetchMonthlyBudget
+import com.example.finmate.components.*
+import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -47,41 +46,57 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
-
+    val sharedMonthViewModel: SharedMonthViewModel = viewModel()
     val context = LocalContext.current
+
     var userName by remember { mutableStateOf("User") }
     val initial = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
     val currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+
     var incomemain by remember { mutableStateOf(0) }
     var expensemain by remember { mutableStateOf(0) }
     var budetmain by remember { mutableStateOf(0) }
     var remaining by remember { mutableStateOf(0) }
+
     var showIncomeDialog by remember { mutableStateOf(false) }
-
-
-    LaunchedEffect(Unit) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        uid?.let {
-            // 1. Get user name
-            Firebase.firestore.collection("users")
-                .document(it)
-                .get()
-                .addOnSuccessListener { doc ->
-                    userName = doc.getString("name") ?: "User"
-                }
-
-            // 2. Get budget from Firestore
-            fetchMonthlyBudget(it) { fetchedBudget ->
-                budetmain = fetchedBudget
-                remaining = fetchedBudget - expensemain
-            }
-            println("Remaining: $remaining")
-            println("butemain : $budetmain")
-
-        }
-    }
-
     var showDialog by remember { mutableStateOf(false) }
+    var showMainDialog by remember { mutableStateOf(false) }
+    var showMonthlyDialog by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+
+    val selectedDate by sharedMonthViewModel.selectedMonthStartDate.collectAsState()
+
+
+            LaunchedEffect(selectedDate) {
+                val date = selectedDate ?: return@LaunchedEffect
+                val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
+
+                val monthId = date.toString()
+
+                try {
+                    val document = FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(uid)
+                        .collection(monthId)
+                        .document("summaryt")
+                        .get()
+                        .await()
+
+                    if (document.exists()) {
+                        val amountStr = document.getString("amount") ?: "0"
+                        budetmain = amountStr.toDouble().toInt()
+
+                    } else {
+                        budetmain = 0
+                    }
+                } catch (e: Exception) {
+                    budetmain = 0
+                    Log.e("HomeScreen", "Error loading budget", e)
+                }
+            }
+
+
+    // Expense dialog
     if (showDialog) {
         ExpenseEntryOptionsDialog(
             onDismiss = { showDialog = false },
@@ -93,10 +108,7 @@ fun HomeScreen(navController: NavHostController) {
         )
     }
 
-    var showMainDialog by remember { mutableStateOf(false) }
-    var showMonthlyDialog by remember { mutableStateOf(false) }
-    var showCategoryDialog by remember { mutableStateOf(false) }
-
+    // Budget type dialog
     if (showMainDialog) {
         AlertDialog(
             onDismissRequest = { showMainDialog = false },
@@ -122,21 +134,24 @@ fun HomeScreen(navController: NavHostController) {
         )
     }
 
+    // Monthly budget dialog
     if (showMonthlyDialog) {
         AlertDialog(
             onDismissRequest = { showMonthlyDialog = false },
             title = { Text("Add Monthly Budget") },
             text = {
                 AddMonthlyBudgetForm(
-                    onSave = { showMonthlyDialog = false },
+                    onSave = { showMonthlyDialog = false }, // real-time listener will auto-update
                     onCancel = { showMonthlyDialog = false },
-                )},
-
+                    sharedMonthViewModel
+                )
+            },
             confirmButton = {},
             dismissButton = {}
         )
     }
 
+    // Category budget dialog
     if (showCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showCategoryDialog = false },
@@ -157,12 +172,9 @@ fun HomeScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-
                 title = {
                     Text("FinMate", color = Color.White, fontWeight = FontWeight.SemiBold)
                 },
-
-
                 actions = {
                     Box(
                         modifier = Modifier
@@ -179,7 +191,6 @@ fun HomeScreen(navController: NavHostController) {
                         Text(text = initial, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
-
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
             )
         },
@@ -187,10 +198,10 @@ fun HomeScreen(navController: NavHostController) {
             NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
-                    Icons.Default.Home, // Vector
-                    R.drawable.baseline_auto_graph_24, // Drawable
+                    Icons.Default.Home,
+                    R.drawable.baseline_auto_graph_24,
                     R.drawable.baseline_category_24,
-                    Icons.Default.Settings // Vector
+                    Icons.Default.Settings
                 )
 
                 items.forEachIndexed { index, item ->
@@ -230,16 +241,16 @@ fun HomeScreen(navController: NavHostController) {
                     )
                 }
             }
-
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(16.dp).verticalScroll(rememberScrollState())
-
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
         ) {
+            // Top info box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -271,6 +282,9 @@ fun HomeScreen(navController: NavHostController) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Budget will now auto-update
+            Log.e("budget main", budetmain.toString())
             DashboardGrid(
                 expensemain = expensemain,
                 remaining = remaining,
@@ -289,7 +303,6 @@ fun HomeScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(18.dp))
             Text(text = "Add New", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-            Spacer(modifier = Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 val buttonColors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3), contentColor = Color.White)
@@ -299,11 +312,7 @@ fun HomeScreen(navController: NavHostController) {
                 Button(onClick = { showMainDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
                     Text("Budget", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
-                Button(onClick = {
-                    showIncomeDialog = true
-
-
-                }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+                Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
                     Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
@@ -313,60 +322,25 @@ fun HomeScreen(navController: NavHostController) {
                 onDismiss = { showIncomeDialog = false },
                 onSave = { incomemain = it },
             )
-
-
-
-            Spacer(modifier = Modifier.height(18.dp))
-            Text(text = "Recent Transactions", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-
-            Box(
-                modifier = Modifier.fillMaxWidth().height(80.dp).clip(MaterialTheme.shapes.medium).background(Color(0xFFB8BABB)).padding(horizontal = 16.dp, vertical = 10.dp)
-            ) {
-                Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column {
-                        Text("Domino's Pizza", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(
-                            0xFF133C60
-                        )
-                        )
-                        Text("₹350 • Food & Dining", fontSize = 14.sp, color = Color.DarkGray)
-                    }
-                    Button(onClick = { Toast.makeText(context, "Show All Clicked", Toast.LENGTH_SHORT).show() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12648D), contentColor = Color.White), modifier = Modifier.height(36.dp)) {
-                        Text("Show All", fontSize = 13.sp)
-                    }
-                }
-            }
         }
     }
 }
 
 @Composable
 fun DashboardGrid(
-    expensemain: Int = 0,
-    remaining: Int = 0,
-    budetmain: Int = 0,
-    incomemain: Int = 0,
-
-    ) {
-
-
+    expensemain: Int ,
+    remaining: Int ,
+    budetmain: Int ,
+    incomemain: Int
+) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard("Expenses",
-                expensemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFFB8BABB), Color(
-                0xFFB8BABB
-            )
-            ), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Expenses", expensemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFFB8BABB), Color(
-                0xFFB8BABB
-            )
-            ), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFB8BABB), Color(
-                0xFFB8BABB
-            )
-            ), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
         }
     }
 }

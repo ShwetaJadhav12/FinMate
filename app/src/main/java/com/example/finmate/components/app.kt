@@ -8,47 +8,48 @@ import com.google.firebase.firestore.firestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun saveMonthlyBudgetToFirebase(
     userId: String,
-    monthId: String,  // "2025-07"
     amount: String,
-    startDay: Int,
     startDate: LocalDate,
     endDate: LocalDate,
     onSuccess: () -> Unit,
     onFailure: (Exception) -> Unit
 ) {
-    val db = FirebaseFirestore.getInstance()
+    val monthId = "${startDate.year}-${startDate.monthValue.toString().padStart(2, '0')}-${startDate.dayOfMonth.toString().padStart(2, '0')}"
 
-    val budgetData = hashMapOf(
+    val budgetData = mapOf(
         "amount" to amount,
-        "startDay" to startDay,
         "startDate" to startDate.toString(),
-        "endDate" to endDate.toString(),
-        "type" to "Monthly"
+        "endDate" to endDate.toString()
     )
 
-    db.collection("users")
+    FirebaseFirestore.getInstance()
+        .collection("users")
         .document(userId)
         .collection(monthId)
-        .document("summaryt")  // ⚠️ this makes it a document, not a collection!
+        .document("summaryt")
         .set(budgetData)
         .addOnSuccessListener { onSuccess() }
-        .addOnFailureListener { e -> onFailure(e) }
+        .addOnFailureListener { onFailure(it) }
 }
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 fun fetchMonthlyBudget(
     userId: String,
+    startDate: String,
     onResult: (Int) -> Unit
 ) {
-    // Use correct month key, based on your Firestore structure
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val currentMonthKey = LocalDate.now().format(formatter)
+    val monthId = startDate.format(formatter)
+    println("monthId: $monthId")
 
     val summaryRef = Firebase.firestore
         .collection("users")
         .document(userId)
-        .collection(currentMonthKey)
+        .collection(monthId)
         .document("summaryt")
 
     summaryRef.get()

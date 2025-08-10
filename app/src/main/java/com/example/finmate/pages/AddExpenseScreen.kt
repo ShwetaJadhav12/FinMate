@@ -146,7 +146,8 @@ fun AddExpenseScreen(navController: NavHostController,
                     },
                     onFailure = {
                         Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+
                 )
 
             },modifier = Modifier.fillMaxWidth(),
