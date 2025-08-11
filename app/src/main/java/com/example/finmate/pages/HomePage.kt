@@ -2,6 +2,7 @@ package com.example.finmate.pages
 
 import AddCategoryBudgetForm
 import AddMonthlyBudgetForm
+import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -42,6 +43,7 @@ import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@SuppressLint("SuspiciousIndentation")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
