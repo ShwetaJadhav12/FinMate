@@ -1,7 +1,5 @@
 package com.example.finmate.pages
 
-import AddCategoryBudgetForm
-import AddMonthlyBudgetForm
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
@@ -28,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,33 +68,33 @@ fun HomeScreen(navController: NavHostController) {
     val selectedDate by sharedMonthViewModel.selectedMonthStartDate.collectAsState()
 
 
-            LaunchedEffect(selectedDate) {
-                val date = selectedDate ?: return@LaunchedEffect
-                val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
+    LaunchedEffect(selectedDate) {
+        val date = selectedDate ?: return@LaunchedEffect
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
 
-                val monthId = date.toString()
+        val monthId = date.toString()
 
-                try {
-                    val document = FirebaseFirestore.getInstance()
-                        .collection("users")
-                        .document(uid)
-                        .collection(monthId)
-                        .document("summaryt")
-                        .get()
-                        .await()
+        try {
+            val document = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .collection(monthId)
+                .document("summaryt")
+                .get()
+                .await()
 
-                    if (document.exists()) {
-                        val amountStr = document.getString("amount") ?: "0"
-                        budetmain = amountStr.toDouble().toInt()
+            if (document.exists()) {
+                val amountStr = document.getString("amount") ?: "0"
+                budetmain = amountStr.toDouble().toInt()
 
-                    } else {
-                        budetmain = 0
-                    }
-                } catch (e: Exception) {
-                    budetmain = 0
-                    Log.e("HomeScreen", "Error loading budget", e)
-                }
+            } else {
+                budetmain = 0
             }
+        } catch (e: Exception) {
+            budetmain = 0
+            Log.e("HomeScreen", "Error loading budget", e)
+        }
+    }
 
 
     // Expense dialog
@@ -136,38 +135,6 @@ fun HomeScreen(navController: NavHostController) {
         )
     }
 
-    // Monthly budget dialog
-    if (showMonthlyDialog) {
-        AlertDialog(
-            onDismissRequest = { showMonthlyDialog = false },
-            title = { Text("Add Monthly Budget") },
-            text = {
-                AddMonthlyBudgetForm(
-                    onSave = { showMonthlyDialog = false }, // real-time listener will auto-update
-                    onCancel = { showMonthlyDialog = false },
-                    sharedMonthViewModel
-                )
-            },
-            confirmButton = {},
-            dismissButton = {}
-        )
-    }
-
-    // Category budget dialog
-    if (showCategoryDialog) {
-        AlertDialog(
-            onDismissRequest = { showCategoryDialog = false },
-            title = { Text("Add Category-wise Budget") },
-            text = {
-                AddCategoryBudgetForm(
-                    onSave = { showCategoryDialog = false },
-                    onCancel = { showCategoryDialog = false },
-                )
-            },
-            confirmButton = {},
-            dismissButton = {}
-        )
-    }
 
     var selectedIndex by remember { mutableStateOf(0) }
 
@@ -249,8 +216,7 @@ fun HomeScreen(navController: NavHostController) {
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-                .fillMaxSize()
+               .fillMaxSize()
         ) {
             // Top info box
             Box(
@@ -293,7 +259,18 @@ fun HomeScreen(navController: NavHostController) {
                 budetmain = budetmain,
                 incomemain = incomemain
             )
-
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Remaining : 678999",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Color(0xFF4CAF50), // Green text for positivity
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 5.dp)
+                    .align(Alignment.CenterHorizontally),
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(18.dp))
             GradientBox(
                 text = "Top Spending Categories: Food, Groceries",
@@ -311,13 +288,12 @@ fun HomeScreen(navController: NavHostController) {
                 Button(onClick = { showDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
                     Text("Expenses", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
-                Button(onClick = { showMainDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
-                    Text("Budget", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                }
                 Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
                     Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            RecentTransactionsSection()
 
             AddIncomeToDashBoard(
                 showDialog = showIncomeDialog,
@@ -338,11 +314,8 @@ fun DashboardGrid(
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GradientDashboardCard("Expenses", expensemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Remaining", remaining.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
+            GradientDashboardCard("Income", remaining.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard("Budget", budetmain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Income", incomemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
-        }
+
     }
 }
