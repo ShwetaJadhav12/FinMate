@@ -20,6 +20,7 @@ import com.example.finmate.pages.CategoryGridScreen
 import com.example.finmate.pages.HomeScreen
 import com.example.finmate.pages.LoginScreen
 import com.example.finmate.pages.ProfilePage
+import com.example.finmate.pages.ShowMoreTransactionsScreen
 import com.example.finmate.pages.SignupScreen
 import com.example.finmate.speechtotext.SpeechToTextScreen
 import com.example.finmate.viewmodel.SharedMonthViewModel
@@ -109,10 +110,9 @@ fun AppNavigation(
         composable("speechtotext") {
             SpeechToTextScreen(navController)
         }
-
-
-
-
+        composable("showMoreTransactions") {
+            ShowMoreTransactionsScreen()
+        }
 
 
     }

@@ -1,5 +1,4 @@
 package com.example.finmate.pages
-
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
@@ -9,10 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -36,8 +33,6 @@ import com.example.finmate.components.*
 import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -51,7 +46,8 @@ fun HomeScreen(navController: NavHostController) {
     val context = LocalContext.current
 
     var userName by remember { mutableStateOf("User") }
-    val initial = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+    var initialLetter by remember { mutableStateOf("U") }
+
     val currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
 
     var incomemain by remember { mutableStateOf(0) }
@@ -67,7 +63,7 @@ fun HomeScreen(navController: NavHostController) {
 
     val selectedDate by sharedMonthViewModel.selectedMonthStartDate.collectAsState()
 
-
+    // Fetch budget from Firestore
     LaunchedEffect(selectedDate) {
         val date = selectedDate ?: return@LaunchedEffect
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
@@ -83,19 +79,43 @@ fun HomeScreen(navController: NavHostController) {
                 .get()
                 .await()
 
-            if (document.exists()) {
-                val amountStr = document.getString("amount") ?: "0"
-                budetmain = amountStr.toDouble().toInt()
+            budetmain = if (document.exists()) {
+                document.getString("amount")?.toDouble()?.toInt() ?: 0
+            } else 0
 
-            } else {
-                budetmain = 0
-            }
         } catch (e: Exception) {
             budetmain = 0
             Log.e("HomeScreen", "Error loading budget", e)
         }
     }
 
+    // Fetch user name from Firestore or FirebaseAuth
+    LaunchedEffect(Unit) {
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        val uid = firebaseUser?.uid
+
+        val displayName = firebaseUser?.displayName
+        if (!displayName.isNullOrBlank()) {
+            userName = displayName
+            initialLetter = displayName.first().uppercaseChar().toString()
+        } else if (uid != null) {
+            try {
+                val userDoc = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(uid)
+                    .get()
+                    .await()
+
+                val nameFromDb = userDoc.getString("name") ?: "User"
+                userName = nameFromDb
+                initialLetter = nameFromDb.first().uppercaseChar().toString()
+            } catch (e: Exception) {
+                Log.e("HomeScreen", "Error fetching username", e)
+                userName = "User"
+                initialLetter = "U"
+            }
+        }
+    }
 
     // Expense dialog
     if (showDialog) {
@@ -135,7 +155,6 @@ fun HomeScreen(navController: NavHostController) {
         )
     }
 
-
     var selectedIndex by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -157,7 +176,11 @@ fun HomeScreen(navController: NavHostController) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = initial, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = initialLetter,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
@@ -216,9 +239,8 @@ fun HomeScreen(navController: NavHostController) {
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
-               .fillMaxSize()
+                .fillMaxSize()
         ) {
-            // Top info box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,7 +249,12 @@ fun HomeScreen(navController: NavHostController) {
                     .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = currentDate, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.DarkGray)
+                    Text(
+                        text = currentDate,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.DarkGray
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "You have used 90% of your budget.\nTry saving in Food.",
@@ -238,60 +265,71 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                GradientButton(
-                    text = "Predict Budget",
-                    onClick = { Toast.makeText(context, "Predict Budget Clicked", Toast.LENGTH_SHORT).show() },
-                    gradientColors = listOf(Color(0xFF12648D), Color(0xFF12648D)),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Budget will now auto-update
-            Log.e("budget main", budetmain.toString())
             DashboardGrid(
                 expensemain = expensemain,
                 remaining = remaining,
                 budetmain = budetmain,
                 incomemain = incomemain
             )
+
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Remaining : 678999",
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
-                color = Color(0xFF4CAF50), // Green text for positivity
+                color = Color(0xFF4CAF50),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 5.dp)
                     .align(Alignment.CenterHorizontally),
                 textAlign = TextAlign.Center
             )
+
             Spacer(modifier = Modifier.height(18.dp))
             GradientBox(
                 text = "Top Spending Categories: Food, Groceries",
                 gradientColors = listOf(Color(0xFF12648D), Color(0xFF12648D)),
                 fontSize = 16.sp,
                 fontColor = Color.White,
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             )
 
             Spacer(modifier = Modifier.height(18.dp))
-            Text(text = "Add New", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+            Text(
+                text = "Add New",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 20.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+            )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                val buttonColors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3), contentColor = Color.White)
-                Button(onClick = { showDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val buttonColors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2196F3),
+                    contentColor = Color.White
+                )
+                Button(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.weight(1f).height(45.dp),
+                    colors = buttonColors
+                ) {
                     Text("Expenses", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
-                Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f).height(45.dp), colors = buttonColors) {
+                Button(
+                    onClick = { showIncomeDialog = true },
+                    modifier = Modifier.weight(1f).height(45.dp),
+                    colors = buttonColors
+                ) {
                     Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
+
             Spacer(modifier = Modifier.height(10.dp))
             RecentTransactionsSection()
 
@@ -306,16 +344,31 @@ fun HomeScreen(navController: NavHostController) {
 
 @Composable
 fun DashboardGrid(
-    expensemain: Int ,
-    remaining: Int ,
-    budetmain: Int ,
+    expensemain: Int,
+    remaining: Int,
+    budetmain: Int,
     incomemain: Int
 ) {
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GradientDashboardCard("Expenses", expensemain.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
-            GradientDashboardCard("Income", remaining.toString(), listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)), Modifier.weight(1f).height(100.dp))
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            GradientDashboardCard(
+                "Expenses",
+                expensemain.toString(),
+                listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)),
+                Modifier.weight(1f).height(100.dp)
+            )
+            GradientDashboardCard(
+                "Income",
+                remaining.toString(),
+                listOf(Color(0xFFB8BABB), Color(0xFFB8BABB)),
+                Modifier.weight(1f).height(100.dp)
+            )
         }
-
     }
 }
