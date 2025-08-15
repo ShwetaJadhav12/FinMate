@@ -1,22 +1,16 @@
 package com.example.finmate.pages
 
-import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -24,9 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.finmate.GlobNavigation
 import com.example.finmate.R
-import com.example.finmate.components.BottomNavBarMaterial3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +28,21 @@ fun AnalyticsPage(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    var selectedIndex by remember { mutableStateOf(1) } // Default to Category page
+    var selectedTabIndex by remember { mutableStateOf(selectedIndex) }
+    var expanded by remember { mutableStateOf(false) } // For dropdown toggle
+    var selectedOption by remember { mutableStateOf("Weekly Bar chart") } // Default selected option
+
+    val gradientColors = if (isSystemInDarkTheme()) {
+        listOf(Color(0xFF3F6FB8), Color(0xFF5A8FD0)) // Softer blues for dark theme
+    } else {
+        listOf(Color(0xFF2E5D9F), Color(0xFF4A7CC3)) // Softer blues for light theme
+    }
+
+    val options = listOf(
+        "Weekly Bar chart",
+        "Monthly Analysis",
+        "Category wise pie chart analysis"
+    )
 
     Scaffold(
         topBar = {
@@ -52,17 +58,17 @@ fun AnalyticsPage(
             NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
-                    Icons.Default.Home, // Vector
-                    R.drawable.baseline_auto_graph_24, // Drawable
+                    Icons.Default.Home,
+                    R.drawable.baseline_auto_graph_24,
                     R.drawable.baseline_category_24,
-                    Icons.Default.Settings // Vector
+                    Icons.Default.Settings
                 )
 
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        selected = selectedIndex == index,
+                        selected = selectedTabIndex == index,
                         onClick = {
-                            selectedIndex = index
+                            selectedTabIndex = index
                             when (index) {
                                 0 -> navController.navigate("home")
                                 1 -> navController.navigate("analytics")
@@ -95,7 +101,6 @@ fun AnalyticsPage(
                     )
                 }
             }
-
         },
     ) { paddingValues ->
         Column(
@@ -110,52 +115,59 @@ fun AnalyticsPage(
                 text = "Spending Overview",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF424242)
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-//                    Toast.makeText(context,"cliked on weekly bar chart")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF12648D),
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Weekly Bar chart")
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-//                    Toast.makeText(context,"cliked on weekly bar chart")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF12648D),
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Monthly Analysis")
+            // Main dropdown button
+            GradientButton("$selectedOption ▼", gradientColors) {
+                expanded = !expanded
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-//                    Toast.makeText(context,"cliked on weekly bar chart")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF12648D),
-                    contentColor = Color.White
-                )
+            // Show dropdown menu when expanded
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-                Text("Category wise pie chart analysis")
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            selectedOption = option
+                            expanded = false
+                        }
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun GradientButton(text: String, gradientColors: List<Color>, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent
+        ),
+        contentPadding = PaddingValues()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.horizontalGradient(gradientColors)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

@@ -17,10 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -248,18 +244,21 @@ fun DashboardGrid() {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        val textColor = MaterialTheme.colorScheme.onSurface
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GradientDashboardCard(
                 title = "Expenses",
                 t1 = "₹10,000",
                 gradientColors = listOf(Color(0xFFD21E60), Color(0xFFD0839F)),
-                modifier = Modifier.weight(1f).height(100.dp)
+                modifier = Modifier.weight(1f).height(100.dp),
+                textColor = textColor
             )
             GradientDashboardCard(
                 title = "Remaining",
                 t1 = "₹20,000",
                 gradientColors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)),
-                modifier = Modifier.weight(1f).height(100.dp)
+                modifier = Modifier.weight(1f).height(100.dp),
+                textColor = textColor
             )
         }
 
@@ -268,13 +267,15 @@ fun DashboardGrid() {
                 title = "Budget",
                 t1 = "₹80,000",
                 gradientColors = listOf(Color(0xFF8E24AA), Color(0xFFCE93D8)),
-                modifier = Modifier.weight(1f).height(100.dp)
+                modifier = Modifier.weight(1f).height(100.dp),
+                textColor = textColor
             )
             GradientDashboardCard(
                 title = "Income",
                 t1 = "₹1,00,000",
                 gradientColors = listOf(Color(0xFFFF9800), Color(0xFFFFCC80)),
-                modifier = Modifier.weight(1f).height(100.dp)
+                modifier = Modifier.weight(1f).height(100.dp),
+                textColor = textColor
             )
         }
     }

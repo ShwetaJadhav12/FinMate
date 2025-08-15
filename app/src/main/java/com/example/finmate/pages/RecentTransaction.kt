@@ -2,6 +2,7 @@ package com.example.finmate.pages
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -95,17 +97,27 @@ fun RecentTransactionsSection() {
             )
         }
 
-        expenses.forEach { expense ->
-            TransactionCard(expense)
+        LazyColumn {
+            items(expenses) { expense ->
+                TransactionCard(expense)
+            }
         }
+
     }
 }
 
 @Composable
 fun TransactionCard(expense: Expenses) {
+    val isDark = isSystemInDarkTheme() // true if dark theme, false if light
+
+    val cardBackground = if (isDark) Color(0xFF2A3A4F) else Color(0xFFC9E5FA)
+    val textTitleColor = if (isDark) Color(0xFFB3E5FC) else Color.Black
+    val textSecondaryColor = if (isDark) Color(0xFFB0B0B0) else Color(0xFF606060)
+    val dateColor = if (isDark) Color(0xFFB0B0B0) else Color.Gray
+
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFC9E5FA)),
+        colors = CardDefaults.cardColors(containerColor = cardBackground),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
@@ -117,17 +129,15 @@ fun TransactionCard(expense: Expenses) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(expense.title, fontWeight = FontWeight.Bold)
-                Text(expense.category, fontSize = 12.sp, color = Color(0xFF606060))
-                Text("${expense.date} ${expense.time}", fontSize = 12.sp, color = Color.Gray)
+                Text(expense.title, fontWeight = FontWeight.Bold, color = textTitleColor)
+                Text(expense.category, fontSize = 12.sp, color = textSecondaryColor)
+                Text("${expense.date} ${expense.time}", fontSize = 12.sp, color = dateColor)
             }
             Text(
                 text = "₹${expense.amount}",
-                color = if (expense.amount.toDoubleOrNull() ?: 0.0 >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
+                color = if ((expense.amount.toDoubleOrNull() ?: 0.0) >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
                 fontWeight = FontWeight.Bold
             )
         }
     }
 }
-
-

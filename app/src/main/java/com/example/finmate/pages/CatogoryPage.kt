@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,9 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -29,18 +27,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.finmate.GlobNavigation.navController
 import com.example.finmate.R
-import com.example.finmate.components.BottomNavBarMaterial3
 import com.example.finmate.model.Category
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Fetch categories from Firestore
 fun fetchCategoriesFromFirestore(
     onSuccess: (List<Category>) -> Unit,
     onFailure: (Exception) -> Unit = {}
@@ -52,19 +47,27 @@ fun fetchCategoriesFromFirestore(
             val categoryList = result.map { it.toObject(Category::class.java) }
             onSuccess(categoryList)
         }
-        .addOnFailureListener {
-            onFailure(it)
-        }
+        .addOnFailureListener { onFailure(it) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryGridScreen() {
-    var selectedIndex by remember { mutableStateOf(2) } // Default to Category page
-
+    var selectedIndex by remember { mutableStateOf(2) }
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
 
-    // Fetch categories once
+    val isDark = isSystemInDarkTheme()
+
+    // Adaptive card colors
+    val cardGradientColors = if (isDark) {
+        listOf(Color(0xFF2B2F3B), Color(0xFF3A4050)) // dark gray-blue gradient
+    } else {
+        listOf(Color(0xFFD0E4F5), Color(0xFFE6F0FA)) // light blue gradient
+    }
+
+    // Adaptive text color
+    val textColor = if (isDark) Color(0xFFBBDEFB) else Color(0xFF0D47A1)
+
     LaunchedEffect(Unit) {
         fetchCategoriesFromFirestore(
             onSuccess = { categories = it },
@@ -75,12 +78,7 @@ fun CategoryGridScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "Categories",
-                        style = MaterialTheme.typography.titleLarge)
-                },
-
+                title = { Text("Categories", style = MaterialTheme.typography.titleLarge) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF3198F1),
                     titleContentColor = Color.White,
@@ -88,15 +86,14 @@ fun CategoryGridScreen() {
                 )
             )
         },
-
         bottomBar = {
             NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
-                    Icons.Default.Home, // Vector
-                    R.drawable.baseline_auto_graph_24, // Drawable
+                    Icons.Default.Home,
+                    R.drawable.baseline_auto_graph_24,
                     R.drawable.baseline_category_24,
-                    Icons.Default.Settings // Vector
+                    Icons.Default.Settings
                 )
 
                 items.forEachIndexed { index, item ->
@@ -136,9 +133,7 @@ fun CategoryGridScreen() {
                     )
                 }
             }
-
         },
-
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyVerticalGrid(
@@ -153,10 +148,8 @@ fun CategoryGridScreen() {
             itemsIndexed(categories) { _, category ->
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth().clickable {
-                            navController.navigate("categoryExpenses/${category.name}")
-
-                        }
+                        .fillMaxWidth()
+                        .clickable { navController.navigate("categoryExpenses/${category.name}") }
                         .aspectRatio(1f)
                         .shadow(8.dp, RoundedCornerShape(20.dp)),
                     shape = RoundedCornerShape(20.dp),
@@ -165,14 +158,7 @@ fun CategoryGridScreen() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFFE3F2FD),
-                                        Color(0xFFE3F2FD)
-                                    )
-                                )
-                            )
+                            .background(brush = Brush.verticalGradient(cardGradientColors))
                             .padding(16.dp)
                     ) {
                         Column(
@@ -193,7 +179,7 @@ fun CategoryGridScreen() {
                             Text(
                                 text = category.name,
                                 fontSize = 20.sp,
-                                color = Color(0xFF0D47A1),
+                                color = textColor,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
