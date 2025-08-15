@@ -23,7 +23,6 @@ import com.example.finmate.components.ExpenseCard
 import com.example.finmate.components.GradientDashboardCard
 import com.example.finmate.components.fetchExpensesByCategory
 import com.example.finmate.model.Expenses
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryExpensesScreen(categoryName: String) {
@@ -46,6 +45,9 @@ fun CategoryExpensesScreen(categoryName: String) {
         )
     }
 
+    // Helper to calculate total spent
+    fun totalSpent(): Int = expenses.sumOf { it.amount.toIntOrNull() ?: 0 }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,7 +63,7 @@ fun CategoryExpensesScreen(categoryName: String) {
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).padding(12.dp)) {
 
-            // ✅ Add Budget & Spent cards here
+            // ✅ Budget & Spent cards
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Card(
                     modifier = Modifier.weight(1f),
@@ -78,7 +80,7 @@ fun CategoryExpensesScreen(categoryName: String) {
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Spent")
-                        Text("₹ ${expenses.sumOf { it.amount.toInt() }}")
+                        Text("₹ ${totalSpent()}")
                     }
                 }
             }
@@ -90,7 +92,17 @@ fun CategoryExpensesScreen(categoryName: String) {
             } else {
                 LazyColumn {
                     items(expenses) { expense ->
-                        ExpenseCard(expense = expense)
+                        ExpenseCard(
+                            expense = expense,
+                            onExpenseDeleted = { amountDeleted ->
+                                expenses = expenses.filter { it.id != expense.id }
+                            },
+                            onExpenseUpdated = { newAmount, oldAmount ->
+                                expenses = expenses.map {
+                                    if (it.id == expense.id) it.copy(amount = newAmount.toString()) else it
+                                }
+                            }
+                        )
                     }
                 }
             }
