@@ -174,6 +174,8 @@ fun HomeScreen(navController: NavHostController) {
     LaunchedEffect(Unit) {
         try {
             incomemain = loadIncome()
+            remaining = incomemain - expensemain
+
         } catch (e: Exception) {
             Log.e("HomeScreen", "Error loading income", e)
         }
@@ -190,6 +192,33 @@ fun HomeScreen(navController: NavHostController) {
             onScanReceipt = { showDialog = false }
         )
     }
+    DisposableEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            onDispose { }
+        } else {
+            val registration = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .collection("expenses")
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.e("HomeScreen", "Expense listener error", e)
+                        return@addSnapshotListener
+                    }
+                    val total = snapshot?.documents?.sumOf { doc ->
+                        doc.get("amount").toIntAmount()
+                    } ?: 0
+                    // Update total expenses
+                    expensemain = total
+                    // Recompute remaining whenever expenses change
+                    remaining = incomemain - expensemain
+                }
+
+            onDispose { registration.remove() }
+        }
+    }
+
 
     if (showMainDialog) {
         AlertDialog(
@@ -402,8 +431,10 @@ fun HomeScreen(navController: NavHostController) {
                 onDismiss = { showIncomeDialog = false },
                 onSaved = { newIncome ->
                     incomemain = newIncome
+                    remaining = incomemain - expensemain
                     showIncomeDialog = false
                 }
+
             )
         }
     }
@@ -543,4 +574,10 @@ private fun IncomeInputDialog(
             TextButton(onClick = onCancel) { Text("Cancel") }
         }
     )
+}
+// Safely read an "amount" that might be Number or String
+private fun Any?.toIntAmount(): Int = when (this) {
+    is Number -> this.toInt()
+    is String -> this.toDoubleOrNull()?.toInt() ?: 0
+    else -> 0
 }
