@@ -2,7 +2,9 @@ package com.example.finmate.components
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.example.finmate.model.Income
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import java.time.LocalDate
@@ -58,4 +60,50 @@ fun fetchMonthlyBudget(
             val amount = amountString.toDoubleOrNull()?.toInt() ?: 0
             onResult(amount)
         }
+}
+fun saveIncomeToFirestore(
+    income: Income,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+    if (uid != null) {
+        val db = FirebaseFirestore.getInstance()
+        val incomeRef = db.collection("users")
+            .document(uid)
+            .collection("income")
+            .document("incomeData") // single doc for income
+
+        incomeRef.set(income)  // overwrite if already exists
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    } else {
+        onFailure(Exception("User not logged in"))
+    }
+}
+fun getIncomeFromFirestore(
+    onSuccess: (Income?) -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+    if (uid != null) {
+        val db = FirebaseFirestore.getInstance()
+        val incomeRef = db.collection("users")
+            .document(uid)
+            .collection("income")
+            .document("incomeData")
+
+        incomeRef.get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val income = document.toObject(Income::class.java)
+                    onSuccess(income)
+                } else {
+                    onSuccess(null) // no income yet
+                }
+            }
+            .addOnFailureListener { onFailure(it) }
+    } else {
+        onFailure(Exception("User not logged in"))
+    }
 }

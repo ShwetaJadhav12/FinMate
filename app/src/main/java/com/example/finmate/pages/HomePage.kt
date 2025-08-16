@@ -33,17 +33,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
 import com.example.finmate.components.*
-import com.example.finmate.model.Expenses
 import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.text.SimpleDateFormat
-import java.util.Locale
 
-// Color helper
+// ===================== Helpers & Models =====================
+
 fun Color.adjustBrightness(factor: Float): Color {
     return copy(
         red = (red * factor).coerceIn(0f, 1f),
@@ -51,6 +49,37 @@ fun Color.adjustBrightness(factor: Float): Color {
         blue = (blue * factor).coerceIn(0f, 1f)
     )
 }
+
+private data class Income(val amount: String = "")
+
+private suspend fun loadIncome(): Int {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return 0
+    val snap = FirebaseFirestore.getInstance()
+        .collection("users").document(uid)
+        .collection("user_data").document("income")
+        .get().await()
+    val amountStr = snap.getString("amount") ?: return 0
+    return amountStr.toIntOrNull() ?: 0
+}
+
+private fun saveIncome(
+    newAmount: Int,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+    if (uid == null) {
+        onFailure(Exception("User not logged in")); return
+    }
+    FirebaseFirestore.getInstance()
+        .collection("users").document(uid)
+        .collection("user_data").document("income")
+        .set(Income(amount = newAmount.toString()))
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { onFailure(it) }
+}
+
+// ===================== Screen =====================
 
 @SuppressLint("SuspiciousIndentation")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -81,16 +110,15 @@ fun HomeScreen(navController: NavHostController) {
     val colorScheme = MaterialTheme.colorScheme
     val isLightTheme = colorScheme.background.luminance() > 0.5f
 
-    // Define theme-aware colors
+    // Define theme-aware colors (unchanged visually)
     val backgroundColor = if (isLightTheme) Color(0xFFF5F5F5) else Color(0xFF121212)
     val cardColor = if (isLightTheme) Color(0xFFFFFFFF) else Color(0xFF1E1E1E)
     val primaryText = if (isLightTheme) Color(0xE10E0101) else Color(0xE10E0101)
     val secondaryText = if (isLightTheme) Color(0xFF492B04) else Color(0xFFAAAAAA)
     val accentColor = if (isLightTheme) Color(0xFF2196F3) else Color(0xFF2196F3)
     val positiveColor = if (isLightTheme) Color(0xFF4CAF50) else Color(0xFF4CAF50)
-    val negativeColor = if (isLightTheme) Color(0xFFF44336) else Color(0xFFF44336)
 
-    // Fetch budget
+    // ===================== Fetch budget (existing) =====================
     LaunchedEffect(selectedDate) {
         val date = selectedDate ?: return@LaunchedEffect
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
@@ -108,14 +136,13 @@ fun HomeScreen(navController: NavHostController) {
             budetmain = if (document.exists()) {
                 document.getString("amount")?.toDouble()?.toInt() ?: 0
             } else 0
-
         } catch (e: Exception) {
             budetmain = 0
             Log.e("HomeScreen", "Error loading budget", e)
         }
     }
 
-    // Fetch username
+    // ===================== Fetch username (existing) =====================
     LaunchedEffect(Unit) {
         val firebaseUser = FirebaseAuth.getInstance().currentUser
         val uid = firebaseUser?.uid
@@ -143,7 +170,16 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
 
-    // Dialogs
+    // ===================== Load income on app open =====================
+    LaunchedEffect(Unit) {
+        try {
+            incomemain = loadIncome()
+        } catch (e: Exception) {
+            Log.e("HomeScreen", "Error loading income", e)
+        }
+    }
+
+    // ===================== Existing dialogs =====================
     if (showDialog) {
         ExpenseEntryOptionsDialog(
             onDismiss = { showDialog = false },
@@ -182,7 +218,7 @@ fun HomeScreen(navController: NavHostController) {
 
     var selectedIndex by remember { mutableStateOf(0) }
 
-    // Define gradient for Top Spending
+    // Define gradient for Top Spending (existing)
     val topSpendingGradient = if (isLightTheme) {
         listOf(Color(0xFF2E5D9F), Color(0xFF4A7CC3))
     } else {
@@ -219,6 +255,7 @@ fun HomeScreen(navController: NavHostController) {
                     R.drawable.baseline_category_24,
                     Icons.Default.Settings
                 )
+
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -233,9 +270,15 @@ fun HomeScreen(navController: NavHostController) {
                         },
                         icon = {
                             if (icons[index] is ImageVector) {
-                                Icon(imageVector = icons[index] as ImageVector, contentDescription = item)
+                                Icon(
+                                    imageVector = icons[index] as ImageVector,
+                                    contentDescription = item
+                                )
                             } else {
-                                Icon(painter = painterResource(id = icons[index] as Int), contentDescription = item)
+                                Icon(
+                                    painter = painterResource(id = icons[index] as Int),
+                                    contentDescription = item
+                                )
                             }
                         },
                         label = { Text(item, fontSize = 12.sp) },
@@ -282,7 +325,7 @@ fun HomeScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dashboard Grid
+            // Dashboard Grid (unchanged; shows incomemain)
             DashboardGrid(
                 expensemain = expensemain,
                 remaining = remaining,
@@ -352,14 +395,21 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(10.dp))
             RecentTransactionsSection()
 
+            // ===== Income dialog flow (only addition/change) =====
             AddIncomeToDashBoard(
                 showDialog = showIncomeDialog,
+                currentIncome = incomemain,
                 onDismiss = { showIncomeDialog = false },
-                onSave = { incomemain = it },
+                onSaved = { newIncome ->
+                    incomemain = newIncome
+                    showIncomeDialog = false
+                }
             )
         }
     }
 }
+
+// ===================== Dashboard cards (unchanged except textColor is dynamic) =====================
 
 @Composable
 fun DashboardGrid(
@@ -370,7 +420,6 @@ fun DashboardGrid(
     isLightTheme: Boolean,
     cardColor: Color
 ) {
-    // Automatically choose text color based on theme
     val textColor = if (isSystemInDarkTheme()) Color(0xFFB3E5FC) else Color(0xFF17354F)
 
     Column(
@@ -403,4 +452,95 @@ fun DashboardGrid(
             )
         }
     }
+}
+
+// ===================== Income Dialog(s) =====================
+
+@Composable
+private fun AddIncomeToDashBoard(
+    showDialog: Boolean,
+    currentIncome: Int,
+    onDismiss: () -> Unit,
+    onSaved: (Int) -> Unit
+) {
+    if (!showDialog) return
+
+    // If no income yet → open input dialog directly
+    if (currentIncome <= 0) {
+        IncomeInputDialog(
+            title = "Set Income",
+            initial = "",
+            onCancel = onDismiss,
+            onConfirm = { entered ->
+                val value = entered.toIntOrNull() ?: 0
+                saveIncome(
+                    newAmount = value,
+                    onSuccess = { onSaved(value) },
+                    onFailure = { onDismiss() }
+                )
+            }
+        )
+        return
+    }
+
+    // Else ask whether to edit
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Income?") },
+        text = { Text("Income is already set to ₹$currentIncome. Do you want to edit it?") },
+        confirmButton = {
+            var showEdit by remember { mutableStateOf(false) }
+            Button(onClick = { showEdit = true }) { Text("Yes") }
+
+            if (showEdit) {
+                IncomeInputDialog(
+                    title = "Edit Income",
+                    initial = currentIncome.toString(),
+                    onCancel = onDismiss,
+                    onConfirm = { entered ->
+                        val value = entered.toIntOrNull() ?: currentIncome
+                        saveIncome(
+                            newAmount = value,
+                            onSuccess = { onSaved(value) },
+                            onFailure = { onDismiss() }
+                        )
+                    }
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("No") }
+        }
+    )
+}
+
+@Composable
+private fun IncomeInputDialog(
+    title: String,
+    initial: String,
+    onCancel: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var input by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it.filter { ch -> ch.isDigit() } },
+                label = { Text("Amount") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(
+                enabled = input.isNotBlank(),
+                onClick = { onConfirm(input) }
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) { Text("Cancel") }
+        }
+    )
 }
