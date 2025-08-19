@@ -65,22 +65,17 @@ fun CategoryExpensesScreen(categoryName: String) {
 
             // ✅ Budget & Spent cards
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFD6EAF8))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Budget")
-                        Text("₹ 5000") // Replace with dynamic value if needed
-                    }
-                }
+
                 Card(
                     modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF9E79F))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Spent")
-                        Text("₹ ${totalSpent()}")
+                        Text("Spent",
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,)
+                        Text("₹ ${totalSpent()}",
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
             }

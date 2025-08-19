@@ -38,6 +38,9 @@ fun ShowMoreTransactionsScreen() {
     val expenses = remember { mutableStateListOf<Expenses>() }
     val context = LocalContext.current
 
+    var expanded by remember { mutableStateOf(false) } // For 3-dots menu
+
+    // Load expenses initially
     LaunchedEffect(uid) {
         if (uid != null) {
             try {
@@ -72,6 +75,55 @@ fun ShowMoreTransactionsScreen() {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    // 3 Dots Menu Button
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sort by Date") },
+                            onClick = {
+                                expanded = false
+                                expenses.sortByDescending { expense ->
+                                    val dateTimeString = "${expense.date} ${expense.time}"
+                                    SimpleDateFormat(
+                                        "dd/MM/yyyy HH:mm",
+                                        Locale.getDefault()
+                                    ).parse(dateTimeString)
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort by Month") },
+                            onClick = {
+                                expanded = false
+                                expenses.sortByDescending { expense ->
+                                    try {
+                                        SimpleDateFormat(
+                                            "MM/yyyy",
+                                            Locale.getDefault()
+                                        ).parse(expense.date.substring(3)) // assumes dd/MM/yyyy
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort by Category") },
+                            onClick = {
+                                expanded = false
+                                // Navigate to category page (replace "Food" with chosen category)
+                                navController.navigate("categorypage")
+                            }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3198F1))
