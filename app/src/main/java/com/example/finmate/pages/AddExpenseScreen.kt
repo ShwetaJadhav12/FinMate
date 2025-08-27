@@ -29,7 +29,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavHostController,
-                     ) {
+) {
 
     // Form state
     var date by remember { mutableStateOf("") }
@@ -148,7 +148,7 @@ fun AddExpenseScreen(navController: NavHostController,
                         Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     },
 
-                )
+                    )
 
             },modifier = Modifier.fillMaxWidth(),
                 colors =ButtonDefaults.buttonColors(

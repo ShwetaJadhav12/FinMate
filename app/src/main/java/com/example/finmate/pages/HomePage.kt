@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
+import com.example.finmate.SharedMonthViewModelnew
 import com.example.finmate.components.*
-import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -86,7 +86,7 @@ private fun saveIncome(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    val sharedMonthViewModel: SharedMonthViewModel = viewModel()
+    val sharedMonthViewModel: SharedMonthViewModelnew = viewModel()
     val context = LocalContext.current
 
     var userName by remember { mutableStateOf("User") }
@@ -105,7 +105,7 @@ fun HomeScreen(navController: NavHostController) {
     var showMonthlyDialog by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
 
-    val selectedDate by sharedMonthViewModel.selectedMonthStartDate.collectAsState()
+    val selectedDate by sharedMonthViewModel.selectedMonth.collectAsState()
 
     val colorScheme = MaterialTheme.colorScheme
     val isLightTheme = colorScheme.background.luminance() > 0.5f

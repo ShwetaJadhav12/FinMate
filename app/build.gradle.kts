@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.vision.common)
     implementation(libs.text.recognition)
+    implementation(libs.androidx.core.i18n)
 
 //    implementation(libs.play.services.mlkit.text.recognition.common)
 //    implementation(libs.play.services.mlkit.text.recognition)

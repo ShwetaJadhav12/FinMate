@@ -23,7 +23,6 @@ import com.example.finmate.pages.ProfilePage
 import com.example.finmate.pages.ShowMoreTransactionsScreen
 import com.example.finmate.pages.SignupScreen
 import com.example.finmate.speechtotext.SpeechToTextScreen
-import com.example.finmate.viewmodel.SharedMonthViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
@@ -101,7 +100,7 @@ fun AppNavigation(
             AddExpenseScreen(
                 navController,
             )
-            }
+        }
 
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
