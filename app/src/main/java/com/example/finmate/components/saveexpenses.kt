@@ -11,13 +11,28 @@ fun saveExpenseToFirestore(
 
     if (uid != null) {
         val db = FirebaseFirestore.getInstance()
-        // Generate a new document reference with auto ID
+
+        // Extract month and year from expense.date (assuming format: "dd/MM/yyyy")
+        val monthYear = try {
+            val parts = expense.date.split("/")
+            if (parts.size == 3) {
+                "${parts[1]}-${parts[2]}"  // e.g., "08-2025"
+            } else {
+                "unknown"
+            }
+        } catch (e: Exception) {
+            "unknown"
+        }
+
+        // Reference to the monthly collection
         val docRef = db.collection("users")
             .document(uid)
+            .collection("summary_data")
+            .document(monthYear)
             .collection("expenses")
             .document()
 
-        // Set the expense with the generated ID
+        // Assign auto-generated ID
         val expenseWithId = expense.copy(id = docRef.id)
 
         docRef.set(expenseWithId)
@@ -27,6 +42,7 @@ fun saveExpenseToFirestore(
         onFailure(Exception("User not logged in"))
     }
 }
+
 
 
 

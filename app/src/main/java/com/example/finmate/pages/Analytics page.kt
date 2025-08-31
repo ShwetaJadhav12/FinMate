@@ -1,29 +1,29 @@
 package com.example.finmate.pages
 
-import android.graphics.Paint
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +35,7 @@ import com.example.finmate.model.CategoryExpense
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -97,12 +98,17 @@ fun rememberMonthlyExpenses(): Map<String, Float> {
                 .document(uid)
                 .collection("expenses")
                 .addSnapshotListener { snapshot, e ->
-                    if (e != null) return@addSnapshotListener
+                    if (e != null) {
+                        Log.e("AnalyticsPage", "Firestore error", e)
+                        return@addSnapshotListener
+                    }
 
                     val monthMap = mutableMapOf<String, Float>()
-                    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                    // Use 'd/M/yyyy' to correctly parse dates with single-digit day/month
+                    val formatter = DateTimeFormatter.ofPattern("d/M/yyyy", Locale.getDefault())
 
                     snapshot?.documents?.forEach { doc ->
+                        Log.d("AnalyticsPage", "Doc data: ${doc.data}")
                         val amount = doc.get("amount").toIntAmount().toFloat()
                         val dateStr = doc.getString("date") ?: return@forEach
                         try {
@@ -113,10 +119,13 @@ fun rememberMonthlyExpenses(): Map<String, Float> {
 
                             monthMap[monthYear] =
                                 monthMap.getOrDefault(monthYear, 0f) + amount
-                        } catch (_: Exception) {}
+                        } catch (ex: Exception) {
+                            Log.e("AnalyticsPage", "Failed to parse date: $dateStr", ex)
+                        }
                     }
 
-                    monthlyTotals = monthMap.toSortedMap(compareByDescending { it }) // latest first
+                    Log.d("AnalyticsPage", "Loaded monthlyTotals = $monthMap")
+                    monthlyTotals = monthMap.toSortedMap(compareByDescending { it })
                 }
         }
     }
@@ -131,36 +140,24 @@ fun rememberMonthlyExpenses(): Map<String, Float> {
 fun GradientButton(text: String, gradientColors: List<Color>, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp),
+        modifier = Modifier.fillMaxWidth().height(50.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         contentPadding = PaddingValues()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.horizontalGradient(gradientColors)),
+        Box(modifier = Modifier.fillMaxSize().background(Brush.horizontalGradient(gradientColors)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Text(text = text, color = Color.White, fontSize = 16.sp,
+                fontWeight = FontWeight.Medium)
         }
     }
 }
 
 // ---------------------------
-// Pie Chart
+// Pie Chart + Legend
 // ---------------------------
 @Composable
-fun PieChart(
-    data: List<CategoryExpense>,
-    modifier: Modifier = Modifier
-) {
+fun PieChart(data: List<CategoryExpense>, modifier: Modifier = Modifier) {
     val total = data.sumOf { it.amount }.toFloat()
     var startAngle = -90f
 
@@ -171,7 +168,8 @@ fun PieChart(
                 color = item.color,
                 startAngle = startAngle,
                 sweepAngle = sweep,
-                useCenter = true
+                useCenter = true,
+                size = Size(size.width, size.height)
             )
             startAngle += sweep
         }
@@ -185,59 +183,37 @@ fun PieChartLegend(data: List<CategoryExpense>) {
         data.forEach { item ->
             val percent = if (total == 0f) 0f else (item.amount / total) * 100
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(item.color, shape = CircleShape)
-                )
+                Box(modifier = Modifier.size(12.dp).background(item.color, shape = CircleShape))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    "${item.category}: ${"%.1f".format(percent)}%",
-                    fontSize = 14.sp
-                )
+                Text("${item.category}: ${"%.1f".format(percent)}%", fontSize = 14.sp)
             }
         }
     }
 }
 
 // ---------------------------
-// Month Card
+// Expense Month Card
 // ---------------------------
 @Composable
-fun MonthCard(month: String, total: Float) {
+fun ExpenseMonthCard(month: String, total: Float) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().height(80.dp).padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2196F3))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = month,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = "₹${total.toInt()}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
+            Text(month, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("₹${total.toInt()}", fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold, color = Color.White)
         }
     }
 }
 
 // ---------------------------
-// Month Selector Buttons
+// Month Selection Buttons
 // ---------------------------
 @Composable
 fun MonthSelector(
@@ -245,10 +221,7 @@ fun MonthSelector(
     selectedMonth: String?,
     onMonthSelected: (String) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+    Row(modifier = Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         monthlyExpenses.keys.forEach { month ->
@@ -265,14 +238,13 @@ fun MonthSelector(
 }
 
 // ---------------------------
-// Full AnalyticsPage
+// Analytics Page (Main UI)
 // ---------------------------
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsPage(
     selectedIndex: Int = 1,
-    onTabSelected: (Int) -> Unit = {},
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
@@ -289,10 +261,7 @@ fun AnalyticsPage(
         listOf(Color(0xFF2E5D9F), Color(0xFF4A7CC3))
     }
 
-    val options = listOf(
-        "Monthly Analysis",
-        "Category wise pie chart analysis"
-    )
+    val options = listOf("Monthly Analysis", "Category wise pie chart analysis")
 
     val categoryColors = mapOf(
         "Food" to Color(0xFFFF7043),
@@ -311,8 +280,7 @@ fun AnalyticsPage(
             TopAppBar(
                 title = { Text("Analytics", fontSize = 20.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF2196F3),
-                    titleContentColor = Color.White
+                    containerColor = Color(0xFF2196F3), titleContentColor = Color.White
                 )
             )
         },
@@ -340,15 +308,10 @@ fun AnalyticsPage(
                         },
                         icon = {
                             if (icons[index] is ImageVector) {
-                                Icon(
-                                    imageVector = icons[index] as ImageVector,
-                                    contentDescription = item
-                                )
+                                Icon(icons[index] as ImageVector, contentDescription = item)
                             } else {
-                                Icon(
-                                    painter = painterResource(id = icons[index] as Int),
-                                    contentDescription = item
-                                )
+                                Icon(painter = painterResource(id = icons[index] as Int),
+                                    contentDescription = item)
                             }
                         },
                         label = { Text(item, fontSize = 12.sp) },
@@ -365,30 +328,18 @@ fun AnalyticsPage(
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Spending Overview",
-                fontSize = 22.sp,
+        Column(modifier = modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+
+            Text("Spending Overview", fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+                color = MaterialTheme.colorScheme.onBackground)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            GradientButton("$selectedOption ▼", gradientColors) {
-                expanded = !expanded
-            }
+            GradientButton("$selectedOption ▼", gradientColors) { expanded = !expanded }
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option) },
@@ -398,12 +349,12 @@ fun AnalyticsPage(
                         }
                     )
                 }
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Month Selector
-            MonthSelector(monthlyExpenses, selectedMonth) { month ->
+            MonthSelector(monthlyExpenses, selectedMonth ?: "") { month ->
                 selectedMonth = month
             }
 
@@ -417,39 +368,99 @@ fun AnalyticsPage(
                             try {
                                 val parsedDate = LocalDate.parse(
                                     dateStr,
-                                    DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+                                    DateTimeFormatter.ofPattern("d/M/yyyy", Locale.getDefault())
                                 )
                                 val monthYear = parsedDate.month.name.lowercase()
-                                    .replaceFirstChar { it.titlecase(Locale.getDefault()) } +
-                                        " " + parsedDate.year
+                                    .replaceFirstChar { it.titlecase(Locale.getDefault()) } + " " + parsedDate.year
                                 monthYear == selectedMonth
-                            } catch (_: Exception) { false }
+                            } catch (_: Exception) {
+                                false
+                            }
                         }
                     } else categoryExpenses
 
-                    PieChart(
-                        data = filteredExpenses,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp)
-                    )
+                    PieChart(data = filteredExpenses,
+                        modifier = Modifier.fillMaxWidth().height(250.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     PieChartLegend(filteredExpenses)
                 }
 
                 "Monthly Analysis" -> {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        monthlyExpenses.forEach { (month, total) ->
-                            if (total > 0f) {
-                                MonthCard(month = month, total = total)
+                    if (monthlyExpenses.isEmpty()) {
+                        Text("No expenses data found.", modifier = Modifier.padding(16.dp))
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()) {
+                            monthlyExpenses.forEach { (month, total) ->
+                                if (total > 0f) {
+                                    ExpenseMonthCard(month = month, total = total)
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+// ---------------------------
+// Monthly Summary Screen (Dynamic Cards)
+// ---------------------------
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun MonthlySummaryScreen(
+    navController: NavHostController,
+    firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
+    val currentMonth = remember { YearMonth.now() }
+    var monthsList by remember { mutableStateOf(listOf(currentMonth)) }
+
+    LaunchedEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
+        firestore.collection("users")
+            .document(uid)
+            .collection("summary_data")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("MonthlySummaryScreen", "Error fetching months", error)
+                    return@addSnapshotListener
+                }
+
+                val availableMonths = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        YearMonth.parse(doc.id)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }?.sorted() ?: emptyList()
+
+                monthsList = (listOf(currentMonth) + availableMonths).distinct().sorted()
+            }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text(text = "Monthly Summary", style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp))
+
+        monthsList.forEach { month ->
+            MonthSummaryCard(month = month) {
+                navController.navigate("monthDetail/${month}")
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun MonthSummaryCard(month: YearMonth, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = RoundedCornerShape(16.dp)) {
+        Row(modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")), style = MaterialTheme.typography.titleMedium)
+            Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Go to details")
         }
     }
 }

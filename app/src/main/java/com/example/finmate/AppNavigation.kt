@@ -2,12 +2,9 @@ package com.example.finmate
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,39 +27,49 @@ import com.google.firebase.auth.auth
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
-
     modifier: Modifier = Modifier
 ) {
-
     val navController = rememberNavController()
     GlobNavigation.navController = navController
+
+    // check if user is already logged in
     val isLoggedIn = Firebase.auth.currentUser != null
     val firstPage = if (isLoggedIn) "home" else "auth"
+
     NavHost(
         navController = navController,
         modifier = modifier,
         startDestination = "splash"
     ) {
+        // Splash screen
+        composable("splash") {
+            SplashScreen(navController)
+        }
+
+        // Authentication
         composable("auth") {
             AuthScreen(navController)
         }
-        composable("splash") {
-            SplashScreen(navController) }
-
         composable("login") {
             LoginScreen(navController)
         }
         composable("signup") {
             SignupScreen(navController)
         }
+
+        // Home
         composable("home") {
             HomeScreen(
                 navController = navController
             )
         }
+
+        // Category Page
         composable("categorypage") {
             CategoryGridScreen()
         }
+
+        // Profile/Settings Page
         composable("profilepage") {
             ProfilePage(
                 navController = navController,
@@ -72,53 +79,48 @@ fun AppNavigation(
                         0 -> navController.navigate("home") {
                             popUpTo("home") { inclusive = true }
                         }
-                        1 -> navController.navigate("addExpense")
+                        1 -> navController.navigate("addexpense") // ✅ fixed route
                         2 -> navController.navigate("categorypage")
-                        3 -> {} // already on settings/profile
+                        3 -> {} // already on profile/settings
                     }
                 }
             )
         }
+
+        // Analytics
         composable("analytics") {
             AnalyticsPage(
                 selectedIndex = 1,
                 navController = navController,
-                onTabSelected = { index ->
-                    when (index) {
-                        0 ->  navController.navigate("home") {
-                            popUpTo("home") { inclusive = true }}
-                        1 -> {} // current page
-                        2 -> navController.navigate("categorypage")
-                        3 -> navController.navigate("profilepage")
-                    }
-                }
+
+
             )
         }
 
-
-        composable("addexpense") {
-            AddExpenseScreen(
-                navController,
-            )
+        // Add Expense
+        composable("addexpense") { // ✅ renamed to match navigation
+            AddExpenseScreen(navController)
         }
 
+        // Category detail expenses
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
             CategoryExpensesScreen(categoryName)
         }
+
+        // Speech to text page
         composable("speechtotext") {
             SpeechToTextScreen(navController)
         }
+
+        // More transactions page
         composable("showMoreTransactions") {
             ShowMoreTransactionsScreen()
         }
-
-
     }
-
-
-
 }
+
+// Global navigation holder
 object GlobNavigation {
     @SuppressLint("StaticFieldLeak")
     lateinit var navController: NavHostController
