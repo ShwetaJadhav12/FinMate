@@ -65,64 +65,56 @@ fun showBudgetNotification(context: Context) {
 
 // ===================== Firebase Save Helpers =====================
 @RequiresApi(Build.VERSION_CODES.O)
-private fun saveIncome(
-    newAmount: Int,
-    selectedDate: YearMonth,
-    onSuccess: () -> Unit,
-    onFailure: (Exception) -> Unit
-) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+private fun saveIncome(newAmount: Int, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+        onFailure(Exception("User not logged in"))
+        return
+    }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-
-    val summaryRef = FirebaseFirestore.getInstance()
+    FirebaseFirestore.getInstance()
         .collection("users").document(uid)
-        .collection("summary_data").document(monthId)
-
-    summaryRef.set(mapOf("income" to newAmount), SetOptions.merge())
+        .collection("summary_data")
+        .document(monthId)
+        .collection("income_expenses")
+        .document("income")
+        .set(mapOf("amount" to newAmount.toString()))
         .addOnSuccessListener { onSuccess() }
         .addOnFailureListener { onFailure(it) }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun saveBudget(
-    newAmount: Int,
-    selectedDate: YearMonth,
-    onSuccess: () -> Unit,
-    onFailure: (Exception) -> Unit
-) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+private fun saveBudget(newAmount: Int, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+        onFailure(Exception("User not logged in"))
+        return
+    }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-
-    val summaryRef = FirebaseFirestore.getInstance()
+    FirebaseFirestore.getInstance()
         .collection("users").document(uid)
-        .collection("summary_data").document(monthId)
-
-    summaryRef.set(mapOf("budget" to newAmount), SetOptions.merge())
+        .collection("summary_data")
+        .document(monthId)
+        .set(mapOf("budget" to newAmount.toString()), SetOptions.merge())
         .addOnSuccessListener { onSuccess() }
         .addOnFailureListener { onFailure(it) }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun saveExpense(
-    expense: Expenses,
-    selectedDate: YearMonth,
-    onSuccess: () -> Unit,
-    onFailure: (Exception) -> Unit
-) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+private fun saveExpense(expense: Expenses, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+        onFailure(Exception("User not logged in"))
+        return
+    }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val documentId = expense.id.ifEmpty { System.currentTimeMillis().toString() }
-
-    val db = FirebaseFirestore.getInstance()
-    val summaryRef = db.collection("users").document(uid)
-        .collection("summary_data").document(monthId)
-
-    val expenseRef = summaryRef.collection("expenses").document(documentId)
-
-    db.runBatch { batch ->
-        batch.set(expenseRef, expense)
-        batch.set(summaryRef, mapOf("lastUpdated" to System.currentTimeMillis()), SetOptions.merge())
-    }.addOnSuccessListener { onSuccess() }
+    FirebaseFirestore.getInstance()
+        .collection("users")
+        .document(uid)
+        .collection("summary_data")
+        .document(monthId)
+        .collection("expenses")
+        .document(documentId)
+        .set(expense)
+        .addOnSuccessListener { onSuccess() }
         .addOnFailureListener { onFailure(it) }
 }
 
@@ -145,7 +137,6 @@ fun HomeScreen(navController: NavHostController) {
     val backgroundColor =
         if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFF5F5F5) else Color(0xFF121212)
     val context = LocalContext.current
-
     val dashboardVM: DashboardViewModel = viewModel()
 
     // Load user info
@@ -163,21 +154,18 @@ fun HomeScreen(navController: NavHostController) {
                 val nameFromDb = userDoc.getString("name") ?: "User"
                 userName = nameFromDb
                 initialLetter = nameFromDb.first().uppercaseChar().toString()
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
         }
     }
 
-    // Load summary data when month changes
+    // Load dashboard data per month
     LaunchedEffect(selectedDate) {
         dashboardVM.loadData(selectedDate)
     }
 
-    // Trigger 95% budget notification
+    // Budget notification 95%
     LaunchedEffect(dashboardVM.budget, dashboardVM.expenses) {
-        if (dashboardVM.budget > 0 &&
-            dashboardVM.expenses >= (dashboardVM.budget * 0.95).toInt()
-        ) {
+        if (dashboardVM.budget > 0 && dashboardVM.expenses >= (dashboardVM.budget * 0.95).toInt()) {
             showBudgetNotification(context)
         }
     }
@@ -231,10 +219,7 @@ fun HomeScreen(navController: NavHostController) {
                             if (icons[index] is ImageVector) {
                                 Icon(icons[index] as ImageVector, contentDescription = item)
                             } else {
-                                Icon(
-                                    painter = painterResource(id = icons[index] as Int),
-                                    contentDescription = item
-                                )
+                                Icon(painter = painterResource(id = icons[index] as Int), contentDescription = item)
                             }
                         },
                         label = { Text(item, fontSize = 12.sp) },
@@ -259,7 +244,10 @@ fun HomeScreen(navController: NavHostController) {
                 .background(backgroundColor),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Month Selector
             MonthSelector(sharedMonthViewModel, selectedDate)
+
+            // Dashboard
             Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
                 DashboardCard("Income", dashboardVM.income, incomeColor)
                 DashboardCard("Expenses", dashboardVM.expenses, expensesColor)
@@ -269,27 +257,16 @@ fun HomeScreen(navController: NavHostController) {
                 DashboardCard("Remaining", dashboardVM.remaining, remainingColor)
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { showIncomeDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = incomeColor)
-                ) { Text("Add Income", color = Color.White) }
+            // Buttons
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = incomeColor)) { Text("Add Income", color = Color.White) }
 
-                Button(
-                    onClick = { showBudgetDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
-                ) { Text("Set Budget", color = Color.White) }
+                Button(onClick = { showBudgetDialog = true }, modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)) { Text("Set Budget", color = Color.White) }
 
-                Button(
-                    onClick = { showExpenseDialog = true },
-                    modifier = Modifier.width(120.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
-                ) { Text("Add Expense", color = Color.White) }
+                Button(onClick = { showExpenseDialog = true }, modifier = Modifier.width(120.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)) { Text("Add Expense", color = Color.White) }
             }
         }
     }
@@ -301,10 +278,7 @@ fun HomeScreen(navController: NavHostController) {
             initial = dashboardVM.income.toString(),
             onConfirm = { value ->
                 saveIncome(value, selectedDate,
-                    onSuccess = {
-                        dashboardVM.updateIncome(value)
-                        showIncomeDialog = false
-                    },
+                    onSuccess = { dashboardVM.updateIncome(value); showIncomeDialog = false },
                     onFailure = { showIncomeDialog = false })
             },
             onDismiss = { showIncomeDialog = false }
@@ -317,10 +291,7 @@ fun HomeScreen(navController: NavHostController) {
             initial = dashboardVM.budget.toString(),
             onConfirm = { value ->
                 saveBudget(value, selectedDate,
-                    onSuccess = {
-                        dashboardVM.updateBudget(value)
-                        showBudgetDialog = false
-                    },
+                    onSuccess = { dashboardVM.updateBudget(value); showBudgetDialog = false },
                     onFailure = { showBudgetDialog = false })
             },
             onDismiss = { showBudgetDialog = false }
@@ -339,15 +310,11 @@ fun HomeScreen(navController: NavHostController) {
                             showExpenseDialog = false
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Add Manually")
-                    }
+                    ) { Text("Add Manually") }
                     Button(
-                        onClick = { showExpenseDialog = false /* TODO voice input */ },
+                        onClick = { showExpenseDialog = false /* Voice input placeholder */ },
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Add Using Voice")
-                    }
+                    ) { Text("Add Using Voice") }
                 }
             },
             confirmButton = {},
@@ -368,10 +335,7 @@ fun HomeScreen(navController: NavHostController) {
                     time = time
                 )
                 saveExpense(expense, selectedDate,
-                    onSuccess = {
-                        dashboardVM.addExpense(amount)
-                        showManualExpenseDialog = false
-                    },
+                    onSuccess = { dashboardVM.addExpense(amount); showManualExpenseDialog = false },
                     onFailure = { showManualExpenseDialog = false })
             },
             onDismiss = { showManualExpenseDialog = false }
@@ -383,14 +347,30 @@ fun HomeScreen(navController: NavHostController) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: YearMonth) {
+    val currentMonth = remember { YearMonth.now() }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
     ) {
-        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) { Icon(Icons.Default.ArrowBack, "Prev") }
-        Text(selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        IconButton(onClick = { sharedMonthViewModel.nextMonth() }) { Icon(Icons.Default.ArrowForward, "Next") }
+        // Previous Month Button
+        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) {
+            Icon(Icons.Default.ArrowBack, "Prev")
+        }
+
+        Text(
+            selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        // Next Month Button - only show if not current month
+        if (selectedDate < currentMonth) {
+            IconButton(onClick = { sharedMonthViewModel.nextMonth() }) {
+                Icon(Icons.Default.ArrowForward, "Next")
+            }
+        }
     }
 }
 
@@ -425,7 +405,9 @@ fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, 
                 singleLine = true
             )
         },
-        confirmButton = { TextButton(onClick = { onConfirm(text.toIntOrNull() ?: 0) }) { Text("Save") } },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text.toIntOrNull() ?: 0) }) { Text("Save") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
@@ -457,16 +439,11 @@ fun ExpenseInputDialog(
                         onValueChange = { category = it },
                         label = { Text("Category") },
                         readOnly = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { expanded = true }
+                        modifier = Modifier.fillMaxWidth().clickable { expanded = true }
                     )
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         categories.forEach { cat ->
-                            DropdownMenuItem(text = { Text(cat) }, onClick = {
-                                category = cat
-                                expanded = false
-                            })
+                            DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; expanded = false })
                         }
                     }
                 }
@@ -484,3 +461,4 @@ fun ExpenseInputDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
+
