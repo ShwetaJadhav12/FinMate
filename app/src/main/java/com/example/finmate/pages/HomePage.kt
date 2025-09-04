@@ -2,20 +2,16 @@ package com.example.finmate.pages
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,233 +22,167 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
 import com.example.finmate.SharedMonthViewModelnew
-import com.example.finmate.components.*
+import com.example.finmate.model.Expenses
+import com.example.finmate.viewmodel.DashboardViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
-import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import androidx.core.app.NotificationCompat
 
-// ===================== Helpers & Models =====================
+// ===================== Colors =====================
+val incomeColor = Color(0xFF4CAF50)
+val expensesColor = Color(0xFFF44336)
+val budgetColor = Color(0xFFFF9800)
+val remainingColor = Color(0xFF2196F3)
 
-fun Color.adjustBrightness(factor: Float): Color {
-    return copy(
-        red = (red * factor).coerceIn(0f, 1f),
-        green = (green * factor).coerceIn(0f, 1f),
-        blue = (blue * factor).coerceIn(0f, 1f)
-    )
+// ===================== Notification =====================
+fun showBudgetNotification(context: Context) {
+    val channelId = "budget_alert"
+    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(channelId, "Budget Alerts", NotificationManager.IMPORTANCE_HIGH)
+        manager.createNotificationChannel(channel)
+    }
+    val notification = NotificationCompat.Builder(context, channelId)
+        .setContentTitle("Budget Alert")
+        .setContentText("Your monthly budget is 95% full!")
+        .setSmallIcon(android.R.drawable.ic_dialog_alert)
+        .build()
+    manager.notify(1001, notification)
 }
 
-private data class Income(val amount: String = "")
-
-private suspend fun loadIncome(): Int {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return 0
-    val snap = FirebaseFirestore.getInstance()
-        .collection("users").document(uid)
-        .collection("user_data").document("income")
-        .get().await()
-    val amountStr = snap.getString("amount") ?: return 0
-    return amountStr.toIntOrNull() ?: 0
-}
-
+// ===================== Firebase Save Helpers =====================
+@RequiresApi(Build.VERSION_CODES.O)
 private fun saveIncome(
     newAmount: Int,
+    selectedDate: YearMonth,
     onSuccess: () -> Unit,
     onFailure: (Exception) -> Unit
 ) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid
-    if (uid == null) {
-        onFailure(Exception("User not logged in")); return
-    }
-    FirebaseFirestore.getInstance()
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+
+    val summaryRef = FirebaseFirestore.getInstance()
         .collection("users").document(uid)
-        .collection("user_data").document("income")
-        .set(Income(amount = newAmount.toString()))
+        .collection("summary_data").document(monthId)
+
+    summaryRef.set(mapOf("income" to newAmount), SetOptions.merge())
         .addOnSuccessListener { onSuccess() }
         .addOnFailureListener { onFailure(it) }
 }
 
-// ===================== Screen =====================
+@RequiresApi(Build.VERSION_CODES.O)
+private fun saveBudget(
+    newAmount: Int,
+    selectedDate: YearMonth,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
 
+    val summaryRef = FirebaseFirestore.getInstance()
+        .collection("users").document(uid)
+        .collection("summary_data").document(monthId)
+
+    summaryRef.set(mapOf("budget" to newAmount), SetOptions.merge())
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { onFailure(it) }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun saveExpense(
+    expense: Expenses,
+    selectedDate: YearMonth,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    val documentId = expense.id.ifEmpty { System.currentTimeMillis().toString() }
+
+    val db = FirebaseFirestore.getInstance()
+    val summaryRef = db.collection("users").document(uid)
+        .collection("summary_data").document(monthId)
+
+    val expenseRef = summaryRef.collection("expenses").document(documentId)
+
+    db.runBatch { batch ->
+        batch.set(expenseRef, expense)
+        batch.set(summaryRef, mapOf("lastUpdated" to System.currentTimeMillis()), SetOptions.merge())
+    }.addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { onFailure(it) }
+}
+
+// ===================== HomeScreen =====================
 @SuppressLint("SuspiciousIndentation")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
     val sharedMonthViewModel: SharedMonthViewModelnew = viewModel()
-    val context = LocalContext.current
-
     var userName by remember { mutableStateOf("User") }
     var initialLetter by remember { mutableStateOf("U") }
 
-    val currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
-
-    var incomemain by remember { mutableStateOf(0) }
-    var expensemain by remember { mutableStateOf(0) }
-    var budetmain by remember { mutableStateOf(0) }
-    var remaining by remember { mutableStateOf(0) }
-
     var showIncomeDialog by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
-    var showMainDialog by remember { mutableStateOf(false) }
-    var showMonthlyDialog by remember { mutableStateOf(false) }
-    var showCategoryDialog by remember { mutableStateOf(false) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
+    var showExpenseDialog by remember { mutableStateOf(false) }
+    var showManualExpenseDialog by remember { mutableStateOf(false) }
 
     val selectedDate by sharedMonthViewModel.selectedMonth.collectAsState()
+    val backgroundColor =
+        if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFF5F5F5) else Color(0xFF121212)
+    val context = LocalContext.current
 
-    val colorScheme = MaterialTheme.colorScheme
-    val isLightTheme = colorScheme.background.luminance() > 0.5f
+    val dashboardVM: DashboardViewModel = viewModel()
 
-    // Define theme-aware colors (unchanged visually)
-    val backgroundColor = if (isLightTheme) Color(0xFFF5F5F5) else Color(0xFF121212)
-    val cardColor = if (isLightTheme) Color(0xFFFFFFFF) else Color(0xFF1E1E1E)
-    val primaryText = if (isLightTheme) Color(0xE10E0101) else Color(0xE10E0101)
-    val secondaryText = if (isLightTheme) Color(0xFF492B04) else Color(0xFFAAAAAA)
-    val accentColor = if (isLightTheme) Color(0xFF2196F3) else Color(0xFF2196F3)
-    val positiveColor = if (isLightTheme) Color(0xFF4CAF50) else Color(0xFF4CAF50)
-
-    // ===================== Fetch budget (existing) =====================
-    LaunchedEffect(selectedDate) {
-        val date = selectedDate ?: return@LaunchedEffect
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
-
-        val monthId = date.toString()
-        try {
-            val document = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .collection(monthId)
-                .document("summaryt")
-                .get()
-                .await()
-
-            budetmain = if (document.exists()) {
-                document.getString("amount")?.toDouble()?.toInt() ?: 0
-            } else 0
-        } catch (e: Exception) {
-            budetmain = 0
-            Log.e("HomeScreen", "Error loading budget", e)
-        }
-    }
-
-    // ===================== Fetch username (existing) =====================
+    // Load user info
     LaunchedEffect(Unit) {
         val firebaseUser = FirebaseAuth.getInstance().currentUser
-        val uid = firebaseUser?.uid
-
         val displayName = firebaseUser?.displayName
+        val uid = firebaseUser?.uid
         if (!displayName.isNullOrBlank()) {
             userName = displayName
             initialLetter = displayName.first().uppercaseChar().toString()
         } else if (uid != null) {
             try {
-                val userDoc = FirebaseFirestore.getInstance()
-                    .collection("users")
-                    .document(uid)
-                    .get()
-                    .await()
-
+                val userDoc =
+                    FirebaseFirestore.getInstance().collection("users").document(uid).get().await()
                 val nameFromDb = userDoc.getString("name") ?: "User"
                 userName = nameFromDb
                 initialLetter = nameFromDb.first().uppercaseChar().toString()
-            } catch (e: Exception) {
-                Log.e("HomeScreen", "Error fetching username", e)
-                userName = "User"
-                initialLetter = "U"
+            } catch (_: Exception) {
             }
         }
     }
 
-    // ===================== Load income on app open =====================
-    LaunchedEffect(Unit) {
-        try {
-            incomemain = loadIncome()
-            remaining = incomemain - expensemain
+    // Load summary data when month changes
+    LaunchedEffect(selectedDate) {
+        dashboardVM.loadData(selectedDate)
+    }
 
-        } catch (e: Exception) {
-            Log.e("HomeScreen", "Error loading income", e)
+    // Trigger 95% budget notification
+    LaunchedEffect(dashboardVM.budget, dashboardVM.expenses) {
+        if (dashboardVM.budget > 0 &&
+            dashboardVM.expenses >= (dashboardVM.budget * 0.95).toInt()
+        ) {
+            showBudgetNotification(context)
         }
-    }
-
-    // ===================== Existing dialogs =====================
-    if (showDialog) {
-        ExpenseEntryOptionsDialog(
-            onDismiss = { showDialog = false },
-            onAddManually = {
-                showDialog = false
-                navController.navigate("addExpense")
-            },
-            onScanReceipt = { showDialog = false }
-        )
-    }
-    DisposableEffect(Unit) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) {
-            onDispose { }
-        } else {
-            val registration = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .collection("expenses")
-                .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        Log.e("HomeScreen", "Expense listener error", e)
-                        return@addSnapshotListener
-                    }
-                    val total = snapshot?.documents?.sumOf { doc ->
-                        doc.get("amount").toIntAmount()
-                    } ?: 0
-                    // Update total expenses
-                    expensemain = total
-                    // Recompute remaining whenever expenses change
-                    remaining = incomemain - expensemain
-                }
-
-            onDispose { registration.remove() }
-        }
-    }
-
-
-    if (showMainDialog) {
-        AlertDialog(
-            onDismissRequest = { showMainDialog = false },
-            title = { Text("Choose Budget Type") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = {
-                        showMainDialog = false
-                        showMonthlyDialog = true
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Add Monthly Budget")
-                    }
-                    Button(onClick = {
-                        showMainDialog = false
-                        showCategoryDialog = true
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Add Category-wise Budget")
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {}
-        )
     }
 
     var selectedIndex by remember { mutableStateOf(0) }
-
-    // Define gradient for Top Spending (existing)
-    val topSpendingGradient = if (isLightTheme) {
-        listOf(Color(0xFF2E5D9F), Color(0xFF4A7CC3))
-    } else {
-        listOf(Color(0xFF3F6FB8), Color(0xFF5A8FD0))
-    }
 
     Scaffold(
         topBar = {
@@ -262,21 +192,21 @@ fun HomeScreen(navController: NavHostController) {
                     Box(
                         modifier = Modifier
                             .padding(end = 16.dp)
-                            .border(width = 0.5.dp, color = Color.White, shape = CircleShape)
+                            .border(0.5.dp, Color.White, CircleShape)
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.2f))
                             .clickable { navController.navigate("profilepage") },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = initialLetter, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(initialLetter, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = colorScheme.primary) {
+            NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
                     Icons.Default.Home,
@@ -299,10 +229,7 @@ fun HomeScreen(navController: NavHostController) {
                         },
                         icon = {
                             if (icons[index] is ImageVector) {
-                                Icon(
-                                    imageVector = icons[index] as ImageVector,
-                                    contentDescription = item
-                                )
+                                Icon(icons[index] as ImageVector, contentDescription = item)
                             } else {
                                 Icon(
                                     painter = painterResource(id = icons[index] as Int),
@@ -313,7 +240,7 @@ fun HomeScreen(navController: NavHostController) {
                         label = { Text(item, fontSize = 12.sp) },
                         alwaysShowLabel = true,
                         colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = colorScheme.primary,
+                            indicatorColor = Color(0xFF2196F3),
                             selectedIconColor = Color(0xFF194365),
                             selectedTextColor = Color(0xFF194365),
                             unselectedIconColor = Color.White,
@@ -329,255 +256,231 @@ fun HomeScreen(navController: NavHostController) {
                 .padding(innerPadding)
                 .padding(16.dp)
                 .fillMaxSize()
-                .background(backgroundColor)
+                .background(backgroundColor),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top Info Box
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(cardColor.adjustBrightness(if (isLightTheme) 0.9f else 1.1f))
-                    .padding(16.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = currentDate, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = primaryText)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "You have used 90% of your budget.\nTry saving in Food.",
-                        fontSize = 15.sp,
-                        color = secondaryText.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
-                }
+            MonthSelector(sharedMonthViewModel, selectedDate)
+            Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
+                DashboardCard("Income", dashboardVM.income, incomeColor)
+                DashboardCard("Expenses", dashboardVM.expenses, expensesColor)
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Dashboard Grid (unchanged; shows incomemain)
-            DashboardGrid(
-                expensemain = expensemain,
-                remaining = remaining,
-                budetmain = budetmain,
-                incomemain = incomemain,
-                isLightTheme = isLightTheme,
-                cardColor = cardColor
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Remaining : $remaining",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = positiveColor,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 5.dp)
-                    .align(Alignment.CenterHorizontally),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-            GradientBox(
-                text = "Top Spending Categories: Food, Groceries",
-                gradientColors = topSpendingGradient,
-                fontSize = 16.sp,
-                fontColor = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = "Add New",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 20.sp,
-                color = primaryText,
-                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
+                DashboardCard("Budget", dashboardVM.budget, budgetColor)
+                DashboardCard("Remaining", dashboardVM.remaining, remainingColor)
+            }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val buttonColors = ButtonDefaults.buttonColors(
-                    containerColor = accentColor,
-                    contentColor = Color.White
-                )
-                Button(
-                    onClick = { showDialog = true },
-                    modifier = Modifier.weight(1f).height(45.dp),
-                    colors = buttonColors
-                ) {
-                    Text("Expenses", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                }
                 Button(
                     onClick = { showIncomeDialog = true },
-                    modifier = Modifier.weight(1f).height(45.dp),
-                    colors = buttonColors
-                ) {
-                    Text("Income", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                }
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = incomeColor)
+                ) { Text("Add Income", color = Color.White) }
+
+                Button(
+                    onClick = { showBudgetDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
+                ) { Text("Set Budget", color = Color.White) }
+
+                Button(
+                    onClick = { showExpenseDialog = true },
+                    modifier = Modifier.width(120.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
+                ) { Text("Add Expense", color = Color.White) }
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            RecentTransactionsSection()
-
-            // ===== Income dialog flow (only addition/change) =====
-            AddIncomeToDashBoard(
-                showDialog = showIncomeDialog,
-                currentIncome = incomemain,
-                onDismiss = { showIncomeDialog = false },
-                onSaved = { newIncome ->
-                    incomemain = newIncome
-                    remaining = incomemain - expensemain
-                    showIncomeDialog = false
-                }
-
-            )
         }
     }
-}
 
-// ===================== Dashboard cards (unchanged except textColor is dynamic) =====================
-
-@Composable
-fun DashboardGrid(
-    expensemain: Int,
-    remaining: Int,
-    budetmain: Int,
-    incomemain: Int,
-    isLightTheme: Boolean,
-    cardColor: Color
-) {
-    val textColor = if (isSystemInDarkTheme()) Color(0xFFB3E5FC) else Color(0xFF17354F)
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            GradientDashboardCard(
-                title = "Expenses",
-                t1 = expensemain.toString(),
-                gradientColors = listOf(
-                    cardColor.adjustBrightness(if (isLightTheme) 0.9f else 1.1f),
-                    cardColor.adjustBrightness(if (isLightTheme) 0.85f else 1.15f)
-                ),
-                modifier = Modifier.weight(1f).height(100.dp),
-                textColor = textColor
-            )
-            GradientDashboardCard(
-                title = "Income",
-                t1 = incomemain.toString(),
-                gradientColors = listOf(
-                    cardColor.adjustBrightness(if (isLightTheme) 0.9f else 1.1f),
-                    cardColor.adjustBrightness(if (isLightTheme) 0.85f else 1.15f)
-                ),
-                modifier = Modifier.weight(1f).height(100.dp),
-                textColor = textColor
-            )
-        }
-    }
-}
-
-// ===================== Income Dialog(s) =====================
-
-@Composable
-private fun AddIncomeToDashBoard(
-    showDialog: Boolean,
-    currentIncome: Int,
-    onDismiss: () -> Unit,
-    onSaved: (Int) -> Unit
-) {
-    if (!showDialog) return
-
-    // If no income yet → open input dialog directly
-    if (currentIncome <= 0) {
-        IncomeInputDialog(
+    // ================= Dialogs =================
+    if (showIncomeDialog) {
+        AmountInputDialog(
             title = "Set Income",
-            initial = "",
-            onCancel = onDismiss,
-            onConfirm = { entered ->
-                val value = entered.toIntOrNull() ?: 0
-                saveIncome(
-                    newAmount = value,
-                    onSuccess = { onSaved(value) },
-                    onFailure = { onDismiss() }
-                )
+            initial = dashboardVM.income.toString(),
+            onConfirm = { value ->
+                saveIncome(value, selectedDate,
+                    onSuccess = {
+                        dashboardVM.updateIncome(value)
+                        showIncomeDialog = false
+                    },
+                    onFailure = { showIncomeDialog = false })
+            },
+            onDismiss = { showIncomeDialog = false }
+        )
+    }
+
+    if (showBudgetDialog) {
+        AmountInputDialog(
+            title = "Set Budget",
+            initial = dashboardVM.budget.toString(),
+            onConfirm = { value ->
+                saveBudget(value, selectedDate,
+                    onSuccess = {
+                        dashboardVM.updateBudget(value)
+                        showBudgetDialog = false
+                    },
+                    onFailure = { showBudgetDialog = false })
+            },
+            onDismiss = { showBudgetDialog = false }
+        )
+    }
+
+    if (showExpenseDialog) {
+        AlertDialog(
+            onDismissRequest = { showExpenseDialog = false },
+            title = { Text("Add Expense") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            showManualExpenseDialog = true
+                            showExpenseDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add Manually")
+                    }
+                    Button(
+                        onClick = { showExpenseDialog = false /* TODO voice input */ },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add Using Voice")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showExpenseDialog = false }) { Text("Cancel") }
             }
         )
-        return
     }
 
-    // Else ask whether to edit
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Income?") },
-        text = { Text("Income is already set to ₹$currentIncome. Do you want to edit it?") },
-        confirmButton = {
-            var showEdit by remember { mutableStateOf(false) }
-            Button(onClick = { showEdit = true }) { Text("Yes") }
-
-            if (showEdit) {
-                IncomeInputDialog(
-                    title = "Edit Income",
-                    initial = currentIncome.toString(),
-                    onCancel = onDismiss,
-                    onConfirm = { entered ->
-                        val value = entered.toIntOrNull() ?: currentIncome
-                        saveIncome(
-                            newAmount = value,
-                            onSuccess = { onSaved(value) },
-                            onFailure = { onDismiss() }
-                        )
-                    }
+    if (showManualExpenseDialog) {
+        ExpenseInputDialog(
+            onConfirm = { title, category, amount, date, time ->
+                val expense = Expenses(
+                    title = title,
+                    category = category,
+                    amount = amount.toString(),
+                    date = date,
+                    time = time
                 )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("No") }
-        }
-    )
+                saveExpense(expense, selectedDate,
+                    onSuccess = {
+                        dashboardVM.addExpense(amount)
+                        showManualExpenseDialog = false
+                    },
+                    onFailure = { showManualExpenseDialog = false })
+            },
+            onDismiss = { showManualExpenseDialog = false }
+        )
+    }
+}
+
+// ===================== Components =====================
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: YearMonth) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) { Icon(Icons.Default.ArrowBack, "Prev") }
+        Text(selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        IconButton(onClick = { sharedMonthViewModel.nextMonth() }) { Icon(Icons.Default.ArrowForward, "Next") }
+    }
 }
 
 @Composable
-private fun IncomeInputDialog(
-    title: String,
-    initial: String,
-    onCancel: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var input by remember { mutableStateOf(initial) }
+fun DashboardCard(title: String, amount: Int, color: Color) {
+    Box(
+        modifier = Modifier
+            .height(100.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.2f))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(amount.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+    }
+}
+
+@Composable
+fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf(initial) }
     AlertDialog(
-        onDismissRequest = onCancel,
+        onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             OutlinedTextField(
-                value = input,
-                onValueChange = { input = it.filter { ch -> ch.isDigit() } },
+                value = text,
+                onValueChange = { text = it },
                 label = { Text("Amount") },
                 singleLine = true
             )
         },
-        confirmButton = {
-            Button(
-                enabled = input.isNotBlank(),
-                onClick = { onConfirm(input) }
-            ) { Text("Save") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) { Text("Cancel") }
-        }
+        confirmButton = { TextButton(onClick = { onConfirm(text.toIntOrNull() ?: 0) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
-// Safely read an "amount" that might be Number or String
-private fun Any?.toIntAmount(): Int = when (this) {
-    is Number -> this.toInt()
-    is String -> this.toDoubleOrNull()?.toInt() ?: 0
-    else -> 0
+
+@Composable
+fun ExpenseInputDialog(
+    onConfirm: (String, String, Int, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Food") }
+    var amount by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
+
+    val categories = listOf("Food", "Shopping", "Travel", "Utensils", "Health", "Education")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Expense") },
+        text = {
+            Column {
+                OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
+                Spacer(Modifier.height(4.dp))
+                var expanded by remember { mutableStateOf(false) }
+                Box {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = { category = it },
+                        label = { Text("Category") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = true }
+                    )
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(text = { Text(cat) }, onClick = {
+                                category = cat
+                                expanded = false
+                            })
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(amount, { amount = it }, label = { Text("Amount") }, singleLine = true)
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(date, { date = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true)
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(time, { time = it }, label = { Text("Time (HH:MM)") }, singleLine = true)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(title, category, amount.toIntOrNull() ?: 0, date, time) }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

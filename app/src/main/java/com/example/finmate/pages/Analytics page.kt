@@ -42,7 +42,7 @@ import java.util.Locale
 // ---------------------------
 // Helper: Safe amount conversion
 // ---------------------------
-private fun Any?.toIntAmount(): Int = when (this) {
+fun Any?.toIntAmount(): Int = when (this) {
     is Number -> this.toInt()
     is String -> this.toDoubleOrNull()?.toInt() ?: 0
     else -> 0
@@ -404,9 +404,6 @@ fun AnalyticsPage(
     }
 }
 
-// ---------------------------
-// Monthly Summary Screen (Dynamic Cards)
-// ---------------------------
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MonthlySummaryScreen(
@@ -415,6 +412,19 @@ fun MonthlySummaryScreen(
 ) {
     val currentMonth = remember { YearMonth.now() }
     var monthsList by remember { mutableStateOf(listOf(currentMonth)) }
+
+    val categoryColors = mapOf(
+        "Food" to Color(0xFFFF7043),
+        "Groceries" to Color(0xFF4CAF50),
+        "Travel" to Color(0xFF2196F3),
+        "Shopping" to Color(0xFFFFC107),
+        "Health" to Color(0xFFE91E63),
+        "Education" to Color(0xFF9C27B0),
+        "Others" to Color(0xFF607D8B)
+    )
+
+    // Get monthly category expenses map
+    val monthlyCategoryExpenses = rememberMonthlyCategoryExpenses(categoryColors, firestore)
 
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
@@ -439,13 +449,70 @@ fun MonthlySummaryScreen(
             }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text(text = "Monthly Summary", style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 16.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Text(
+            text = "Monthly Summary",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         monthsList.forEach { month ->
-            MonthSummaryCard(month = month) {
-                navController.navigate("monthDetail/${month}")
+            val categoryList = monthlyCategoryExpenses[month] ?: emptyList()
+
+            MonthSummaryCard(
+                month = month,
+                categoryExpenses = categoryList,
+                onClick = { navController.navigate("monthDetail/${month}") }
+            )
+        }
+    }
+}
+
+@Composable
+fun MonthSummaryCard(
+    month: YearMonth,
+    categoryExpenses: List<CategoryExpense>,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Go to details")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (categoryExpenses.isEmpty()) {
+                Text("No category expenses", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                categoryExpenses.forEach { catExp ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(catExp.category, style = MaterialTheme.typography.bodyMedium)
+                        Text("₹${catExp.amount}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
     }
@@ -453,14 +520,50 @@ fun MonthlySummaryScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MonthSummaryCard(month: YearMonth, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(16.dp)) {
-        Row(modifier = Modifier.padding(20.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")), style = MaterialTheme.typography.titleMedium)
-            Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Go to details")
+fun rememberMonthlyCategoryExpenses(
+    categoryColors: Map<String, Color>,
+    firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+): Map<YearMonth, List<CategoryExpense>> {
+    var monthlyCategoryExpenses by remember { mutableStateOf<Map<YearMonth, List<CategoryExpense>>>(emptyMap()) }
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+    LaunchedEffect(uid) {
+        if (uid != null) {
+            firestore.collection("users")
+                .document(uid)
+                .collection("expenses")
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) return@addSnapshotListener
+
+                    val formatter = DateTimeFormatter.ofPattern("d/M/yyyy", Locale.getDefault())
+                    val tempMap = mutableMapOf<YearMonth, MutableMap<String, Int>>() // month -> category -> amount
+
+                    snapshot?.documents?.forEach { doc ->
+                        val amount = doc.get("amount").toIntAmount()
+                        val dateStr = doc.getString("date") ?: return@forEach
+                        val category = doc.getString("category") ?: "Others"
+
+                        try {
+                            val parsedDate = LocalDate.parse(dateStr, formatter)
+                            val monthYear = YearMonth.of(parsedDate.year, parsedDate.month)
+
+                            val categoryMap = tempMap.getOrPut(monthYear) { mutableMapOf() }
+                            categoryMap[category] = categoryMap.getOrDefault(category, 0) + amount
+                        } catch (ex: Exception) {
+                            Log.e("MonthlyCategoryExpenses", "Failed to parse date: $dateStr", ex)
+                        }
+                    }
+
+                    // Convert to Map<YearMonth, List<CategoryExpense>>
+                    val result = tempMap.mapValues { entry ->
+                        entry.value.map { (cat, amt) ->
+                            CategoryExpense(cat, amt, categoryColors[cat] ?: Color.Gray, "")
+                        }
+                    }
+
+                    monthlyCategoryExpenses = result
+                }
         }
     }
+    return monthlyCategoryExpenses
 }
