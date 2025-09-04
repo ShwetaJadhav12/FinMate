@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.finmate.model.Expenses
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -16,12 +17,14 @@ import java.time.format.DateTimeFormatter
 
 class DashboardViewModel : ViewModel() {
 
-    var income by mutableStateOf(0);
-    var expenses by mutableStateOf(0);
-    var budget by mutableStateOf(0);
-    var remaining by mutableStateOf(0);
+    var income by mutableStateOf(0)
+    var expenses by mutableStateOf(0)
+    var budget by mutableStateOf(0)
+    var remaining by mutableStateOf(0)
+    var expenseList by mutableStateOf(listOf<Expenses>())
+        private set
 
-    // Load all data for selected month from Firestore
+    // ================= Load all data for selected month =================
     @SuppressLint("NewApi")
     fun loadData(selectedDate: YearMonth) {
         viewModelScope.launch {
@@ -30,7 +33,7 @@ class DashboardViewModel : ViewModel() {
                 val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
                 val firestore = FirebaseFirestore.getInstance()
 
-                // load income (income doc inside income_expenses/income)
+                // ----- Load Income -----
                 val incomeSnap = firestore.collection("users")
                     .document(uid)
                     .collection("summary_data")
@@ -41,19 +44,18 @@ class DashboardViewModel : ViewModel() {
                     .await()
                 income = incomeSnap.getString("amount")?.toIntOrNull() ?: 0
 
-                // load budget (document field "budget" or "amount" - adapt if needed)
+                // ----- Load Budget -----
                 val budgetDoc = firestore.collection("users")
                     .document(uid)
                     .collection("summary_data")
                     .document(monthId)
                     .get()
                     .await()
-                // try both keys for compatibility
                 budget = (budgetDoc.getLong("budget")?.toInt()
                     ?: budgetDoc.getString("amount")?.toIntOrNull()
                     ?: 0)
 
-                // load expenses (sum)
+                // ----- Load Expenses List -----
                 val expensesSnap = firestore.collection("users")
                     .document(uid)
                     .collection("summary_data")
@@ -61,9 +63,19 @@ class DashboardViewModel : ViewModel() {
                     .collection("expenses")
                     .get()
                     .await()
-                expenses = expensesSnap.documents.sumOf { it.getString("amount")?.toIntOrNull() ?: 0 }
 
-                // remaining
+                expenseList = expensesSnap.documents.mapNotNull { doc ->
+                    try {
+                        doc.toObject(Expenses::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }.sortedByDescending { (it.date ?: "") + (it.time ?: "") } // Most recent first
+
+                // ----- Calculate total expenses -----
+                expenses = expenseList.sumOf { it.amount?.toIntOrNull() ?: 0 }
+
+                // ----- Calculate remaining -----
                 remaining = budget - expenses
 
             } catch (e: Exception) {
@@ -73,25 +85,27 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
-    // Call after a successful save of an expense
-    fun addExpense(amount: Int) {
-        expenses += amount
+    // ================= Add New Expense =================
+    fun addExpense(expense: Expenses) {
+        val amt = expense.amount?.toIntOrNull() ?: 0
+        expenseList = listOf(expense) + expenseList // add on top
+        expenses += amt
         remaining = budget - expenses
     }
 
-    // Call after a successful income save
+    // ================= Update Income =================
     fun updateIncome(newIncome: Int) {
         income = newIncome
         remaining = budget - expenses
     }
 
-    // Call after a successful budget save
+    // ================= Update Budget =================
     fun updateBudget(newBudget: Int) {
         budget = newBudget
         remaining = budget - expenses
     }
 
-    // Optional: force reload
+    // ================= Force Reload =================
     fun refresh(selectedDate: YearMonth) {
         loadData(selectedDate)
     }

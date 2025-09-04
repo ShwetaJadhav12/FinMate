@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,10 +68,7 @@ fun showBudgetNotification(context: Context) {
 // ===================== Firebase Save Helpers =====================
 @RequiresApi(Build.VERSION_CODES.O)
 private fun saveIncome(newAmount: Int, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
-        onFailure(Exception("User not logged in"))
-        return
-    }
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run { onFailure(Exception("User not logged in")); return }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     FirebaseFirestore.getInstance()
         .collection("users").document(uid)
@@ -84,10 +83,7 @@ private fun saveIncome(newAmount: Int, selectedDate: YearMonth, onSuccess: () ->
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun saveBudget(newAmount: Int, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
-        onFailure(Exception("User not logged in"))
-        return
-    }
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run { onFailure(Exception("User not logged in")); return }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     FirebaseFirestore.getInstance()
         .collection("users").document(uid)
@@ -100,10 +96,7 @@ private fun saveBudget(newAmount: Int, selectedDate: YearMonth, onSuccess: () ->
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun saveExpense(expense: Expenses, selectedDate: YearMonth, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
-        onFailure(Exception("User not logged in"))
-        return
-    }
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run { onFailure(Exception("User not logged in")); return }
     val monthId = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val documentId = expense.id.ifEmpty { System.currentTimeMillis().toString() }
     FirebaseFirestore.getInstance()
@@ -134,8 +127,7 @@ fun HomeScreen(navController: NavHostController) {
     var showManualExpenseDialog by remember { mutableStateOf(false) }
 
     val selectedDate by sharedMonthViewModel.selectedMonth.collectAsState()
-    val backgroundColor =
-        if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFF5F5F5) else Color(0xFF121212)
+    val backgroundColor = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFF5F5F5) else Color(0xFF121212)
     val context = LocalContext.current
     val dashboardVM: DashboardViewModel = viewModel()
 
@@ -149,8 +141,7 @@ fun HomeScreen(navController: NavHostController) {
             initialLetter = displayName.first().uppercaseChar().toString()
         } else if (uid != null) {
             try {
-                val userDoc =
-                    FirebaseFirestore.getInstance().collection("users").document(uid).get().await()
+                val userDoc = FirebaseFirestore.getInstance().collection("users").document(uid).get().await()
                 val nameFromDb = userDoc.getString("name") ?: "User"
                 userName = nameFromDb
                 initialLetter = nameFromDb.first().uppercaseChar().toString()
@@ -159,9 +150,7 @@ fun HomeScreen(navController: NavHostController) {
     }
 
     // Load dashboard data per month
-    LaunchedEffect(selectedDate) {
-        dashboardVM.loadData(selectedDate)
-    }
+    LaunchedEffect(selectedDate) { dashboardVM.loadData(selectedDate) }
 
     // Budget notification 95%
     LaunchedEffect(dashboardVM.budget, dashboardVM.expenses) {
@@ -202,7 +191,6 @@ fun HomeScreen(navController: NavHostController) {
                     R.drawable.baseline_category_24,
                     Icons.Default.Settings
                 )
-
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -216,11 +204,8 @@ fun HomeScreen(navController: NavHostController) {
                             }
                         },
                         icon = {
-                            if (icons[index] is ImageVector) {
-                                Icon(icons[index] as ImageVector, contentDescription = item)
-                            } else {
-                                Icon(painter = painterResource(id = icons[index] as Int), contentDescription = item)
-                            }
+                            if (icons[index] is ImageVector) Icon(icons[index] as ImageVector, contentDescription = item)
+                            else Icon(painter = painterResource(id = icons[index] as Int), contentDescription = item)
                         },
                         label = { Text(item, fontSize = 12.sp) },
                         alwaysShowLabel = true,
@@ -244,10 +229,11 @@ fun HomeScreen(navController: NavHostController) {
                 .background(backgroundColor),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Month Selector
+            BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget)
+            Spacer(modifier = Modifier.height(12.dp))
+
             MonthSelector(sharedMonthViewModel, selectedDate)
 
-            // Dashboard
             Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
                 DashboardCard("Income", dashboardVM.income, incomeColor)
                 DashboardCard("Expenses", dashboardVM.expenses, expensesColor)
@@ -257,16 +243,35 @@ fun HomeScreen(navController: NavHostController) {
                 DashboardCard("Remaining", dashboardVM.remaining, remainingColor)
             }
 
-            // Buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = incomeColor)) { Text("Add Income", color = Color.White) }
-
                 Button(onClick = { showBudgetDialog = true }, modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = budgetColor)) { Text("Set Budget", color = Color.White) }
-
                 Button(onClick = { showExpenseDialog = true }, modifier = Modifier.width(120.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = expensesColor)) { Text("Add Expense", color = Color.White) }
+            }
+
+            // ================= Recent Transactions =================
+            Text(
+                "Recent Transactions",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                items(dashboardVM.expenseList.sortedByDescending { it.date + it.time }) { expense ->
+                    val expenseMonth = try {
+                        YearMonth.parse(expense.date?.substring(0, 7) ?: "", DateTimeFormatter.ofPattern("yyyy-MM"))
+                    } catch (_: Exception) { null }
+                    if (expenseMonth == selectedDate) TransactionItem(expense)
+                }
             }
         }
     }
@@ -276,69 +281,39 @@ fun HomeScreen(navController: NavHostController) {
         AmountInputDialog(
             title = "Set Income",
             initial = dashboardVM.income.toString(),
-            onConfirm = { value ->
-                saveIncome(value, selectedDate,
-                    onSuccess = { dashboardVM.updateIncome(value); showIncomeDialog = false },
-                    onFailure = { showIncomeDialog = false })
-            },
+            onConfirm = { value -> saveIncome(value, selectedDate, { dashboardVM.updateIncome(value); showIncomeDialog=false }, { showIncomeDialog=false }) },
             onDismiss = { showIncomeDialog = false }
         )
     }
-
     if (showBudgetDialog) {
         AmountInputDialog(
             title = "Set Budget",
             initial = dashboardVM.budget.toString(),
-            onConfirm = { value ->
-                saveBudget(value, selectedDate,
-                    onSuccess = { dashboardVM.updateBudget(value); showBudgetDialog = false },
-                    onFailure = { showBudgetDialog = false })
-            },
+            onConfirm = { value -> saveBudget(value, selectedDate, { dashboardVM.updateBudget(value); showBudgetDialog=false }, { showBudgetDialog=false }) },
             onDismiss = { showBudgetDialog = false }
         )
     }
-
     if (showExpenseDialog) {
         AlertDialog(
-            onDismissRequest = { showExpenseDialog = false },
+            onDismissRequest = { showExpenseDialog=false },
             title = { Text("Add Expense") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            showManualExpenseDialog = true
-                            showExpenseDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Add Manually") }
-                    Button(
-                        onClick = { showExpenseDialog = false /* Voice input placeholder */ },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Add Using Voice") }
+                    Button(onClick = { showManualExpenseDialog = true; showExpenseDialog=false }, modifier = Modifier.fillMaxWidth()) { Text("Add Manually") }
+                    Button(onClick = { showExpenseDialog=false }, modifier = Modifier.fillMaxWidth()) { Text("Add Using Voice") }
                 }
             },
             confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showExpenseDialog = false }) { Text("Cancel") }
-            }
+            dismissButton = { TextButton(onClick = { showExpenseDialog=false }) { Text("Cancel") } }
         )
     }
-
     if (showManualExpenseDialog) {
         ExpenseInputDialog(
             onConfirm = { title, category, amount, date, time ->
-                val expense = Expenses(
-                    title = title,
-                    category = category,
-                    amount = amount.toString(),
-                    date = date,
-                    time = time
-                )
-                saveExpense(expense, selectedDate,
-                    onSuccess = { dashboardVM.addExpense(amount); showManualExpenseDialog = false },
-                    onFailure = { showManualExpenseDialog = false })
+                val expense = Expenses(title=title, category=category, amount=amount.toString(), date=date, time=time)
+                saveExpense(expense, selectedDate, { dashboardVM.addExpense(expense); showManualExpenseDialog=false }, { showManualExpenseDialog=false })
             },
-            onDismiss = { showManualExpenseDialog = false }
+            onDismiss = { showManualExpenseDialog=false }
         )
     }
 }
@@ -348,28 +323,15 @@ fun HomeScreen(navController: NavHostController) {
 @Composable
 fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: YearMonth) {
     val currentMonth = remember { YearMonth.now() }
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Previous Month Button
-        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) {
-            Icon(Icons.Default.ArrowBack, "Prev")
-        }
-
-        Text(
-            selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        // Next Month Button - only show if not current month
+        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) { Icon(Icons.Default.ArrowBack, "Prev") }
+        Text(selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")), fontSize=18.sp, fontWeight=FontWeight.SemiBold)
         if (selectedDate < currentMonth) {
-            IconButton(onClick = { sharedMonthViewModel.nextMonth() }) {
-                Icon(Icons.Default.ArrowForward, "Next")
-            }
+            IconButton(onClick = { sharedMonthViewModel.nextMonth() }) { Icon(Icons.Default.ArrowForward, "Next") }
         }
     }
 }
@@ -386,7 +348,7 @@ fun DashboardCard(title: String, amount: Int, color: Color) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.SemiBold)
-            Text(amount.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
+            Text("₹ $amount", fontSize = 22.sp, fontWeight = FontWeight.Bold, color=color)
         }
     }
 }
@@ -397,68 +359,99 @@ fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("Amount") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(text.toIntOrNull() ?: 0) }) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        text = { OutlinedTextField(value=text, onValueChange={text=it}, label={Text("Amount")}, singleLine=true) },
+        confirmButton = { TextButton(onClick={ onConfirm(text.toIntOrNull()?:0) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick=onDismiss){ Text("Cancel") } }
     )
 }
 
 @Composable
-fun ExpenseInputDialog(
-    onConfirm: (String, String, Int, String, String) -> Unit,
-    onDismiss: () -> Unit
-) {
+fun ExpenseInputDialog(onConfirm: (String,String,Int,String,String)->Unit, onDismiss:()->Unit) {
     var title by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Food") }
     var amount by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
-
-    val categories = listOf("Food", "Shopping", "Travel", "Utensils", "Health", "Education")
-
+    val categories = listOf("Food","Shopping","Travel","Utensils","Health","Education")
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add Expense") },
-        text = {
+        onDismissRequest=onDismiss,
+        title={ Text("Add Expense") },
+        text={
             Column {
-                OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
+                OutlinedTextField(value=title, onValueChange={title=it}, label={Text("Title")}, singleLine=true)
                 Spacer(Modifier.height(4.dp))
                 var expanded by remember { mutableStateOf(false) }
                 Box {
-                    OutlinedTextField(
-                        value = category,
-                        onValueChange = { category = it },
-                        label = { Text("Category") },
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth().clickable { expanded = true }
-                    )
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        categories.forEach { cat ->
-                            DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; expanded = false })
-                        }
+                    OutlinedTextField(value=category, onValueChange={category=it}, label={Text("Category")}, readOnly=true, modifier=Modifier.fillMaxWidth().clickable { expanded=true })
+                    DropdownMenu(expanded=expanded, onDismissRequest={expanded=false}) {
+                        categories.forEach { cat -> DropdownMenuItem(text={Text(cat)}, onClick={ category=cat; expanded=false }) }
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                OutlinedTextField(amount, { amount = it }, label = { Text("Amount") }, singleLine = true)
+                OutlinedTextField(value=amount, onValueChange={amount=it}, label={Text("Amount")}, singleLine=true)
                 Spacer(Modifier.height(4.dp))
-                OutlinedTextField(date, { date = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true)
+                OutlinedTextField(value=date, onValueChange={date=it}, label={Text("Date (YYYY-MM-DD)")}, singleLine=true)
                 Spacer(Modifier.height(4.dp))
-                OutlinedTextField(time, { time = it }, label = { Text("Time (HH:MM)") }, singleLine = true)
+                OutlinedTextField(value=time, onValueChange={time=it}, label={Text("Time (HH:MM)")}, singleLine=true)
             }
         },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(title, category, amount.toIntOrNull() ?: 0, date, time) }) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton={ TextButton(onClick={ onConfirm(title,category,amount.toIntOrNull()?:0,date,time) }) { Text("Save") } },
+        dismissButton={ TextButton(onClick=onDismiss){ Text("Cancel") } }
     )
 }
 
+@Composable
+fun TransactionItem(expense: Expenses) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical=4.dp).clickable{}) {
+        Row(
+            modifier=Modifier.fillMaxWidth().background(Color.LightGray.copy(alpha=0.2f), RoundedCornerShape(12.dp)).padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(expense.title, fontWeight=FontWeight.SemiBold)
+                Text(expense.category, fontSize=12.sp, color=Color.Gray)
+            }
+            Text("₹ ${expense.amount}", fontWeight=FontWeight.Bold)
+        }
+    }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun BudgetProgressBox(expenses: Int, budget: Int) {
+    val today = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
+    val percentage = if (budget > 0) ((expenses.toFloat() / budget) * 100).toInt() else 0
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    colors = listOf(Color(0xFF2196F3), Color(0xFF26A69A))
+                )
+            )
+            .padding(16.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxHeight()
+        ) {
+            Text(today, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Column {
+                Text("Budget used: $percentage%", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                LinearProgressIndicator(
+                    progress = (percentage.coerceIn(0, 100) / 100f),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
