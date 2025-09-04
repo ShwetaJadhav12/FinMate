@@ -42,6 +42,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
+import com.example.finmate.components.DateAndTimePicker
 
 // ===================== Colors =====================
 val incomeColor = Color(0xFF4CAF50)
@@ -251,7 +252,9 @@ fun HomeScreen(navController: NavHostController) {
                 Button(onClick = { showExpenseDialog = true }, modifier = Modifier.width(120.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = expensesColor)) { Text("Add Expense", color = Color.White) }
             }
-
+// ================= Recent Transactions =================
+            // ================= Recent Transactions =================
+            // ================= Recent Transactions =================
             // ================= Recent Transactions =================
             Text(
                 "Recent Transactions",
@@ -260,19 +263,41 @@ fun HomeScreen(navController: NavHostController) {
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
+// Flexible formatter for d/M/yyyy
+            val filteredExpenses = dashboardVM.expenseList
+                .mapNotNull { expense ->
+                    try {
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy")
+                        val localDate = java.time.LocalDate.parse(expense.date, formatter)
+                        val expenseMonth = java.time.YearMonth.from(localDate)
+                        if (expenseMonth == selectedDate) expense else null
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                .sortedByDescending {
+                    try {
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy HH:mm")
+                        java.time.LocalDateTime.parse("${it.date} ${it.time}", formatter)
+                    } catch (e: Exception) {
+                        java.time.LocalDateTime.MIN
+                    }
+                }
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                items(dashboardVM.expenseList.sortedByDescending { it.date + it.time }) { expense ->
-                    val expenseMonth = try {
-                        YearMonth.parse(expense.date?.substring(0, 7) ?: "", DateTimeFormatter.ofPattern("yyyy-MM"))
-                    } catch (_: Exception) { null }
-                    if (expenseMonth == selectedDate) TransactionItem(expense)
+                items(filteredExpenses) { expense ->
+                    TransactionItem(expense)
                 }
             }
+
+
+
+
         }
     }
 
@@ -390,9 +415,10 @@ fun ExpenseInputDialog(onConfirm: (String,String,Int,String,String)->Unit, onDis
                 Spacer(Modifier.height(4.dp))
                 OutlinedTextField(value=amount, onValueChange={amount=it}, label={Text("Amount")}, singleLine=true)
                 Spacer(Modifier.height(4.dp))
-                OutlinedTextField(value=date, onValueChange={date=it}, label={Text("Date (YYYY-MM-DD)")}, singleLine=true)
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(value=time, onValueChange={time=it}, label={Text("Time (HH:MM)")}, singleLine=true)
+                DateAndTimePicker(date,time,{date=it},{time=it})
+//                OutlinedTextField(value=date, onValueChange={date=it}, label={Text("Date (YYYY-MM-DD)")}, singleLine=true)
+//                Spacer(Modifier.height(4.dp))
+//                OutlinedTextField(value=time, onValueChange={time=it}, label={Text("Time (HH:MM)")}, singleLine=true)
             }
         },
         confirmButton={ TextButton(onClick={ onConfirm(title,category,amount.toIntOrNull()?:0,date,time) }) { Text("Save") } },
