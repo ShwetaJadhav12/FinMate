@@ -41,8 +41,11 @@ import java.time.format.DateTimeFormatter
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import androidx.compose.ui.graphics.Brush
 import androidx.core.app.NotificationCompat
 import com.example.finmate.components.DateAndTimePicker
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 // ===================== Colors =====================
 val incomeColor = Color(0xFF4CAF50)
@@ -231,8 +234,6 @@ fun HomeScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget)
-            Spacer(modifier = Modifier.height(12.dp))
-
             MonthSelector(sharedMonthViewModel, selectedDate)
 
             Row(
@@ -240,8 +241,8 @@ fun HomeScreen(navController: NavHostController) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 DashboardCard(
-                    "Income",
-                    dashboardVM.income,
+                    "Budegt",
+                    dashboardVM.budget,
                     incomeColor,
                     modifier = Modifier.weight(1f)
                 )
@@ -254,32 +255,43 @@ fun HomeScreen(navController: NavHostController) {
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(13.dp),
+                horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                DashboardCard(
-                    "Budget",
-                    dashboardVM.budget,
-                    budgetColor,
-                    modifier = Modifier.weight(1f)
-                )
-                DashboardCard(
-                    "Remaining",
-                    dashboardVM.remaining,
-                    remainingColor,
-                    modifier = Modifier.weight(1f)
+               Text("Remaining",
+                   fontWeight = FontWeight.SemiBold,
+                   fontSize = 18.sp
+
+               )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("₹${dashboardVM.budget - dashboardVM.expenses}",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = remainingColor
                 )
             }
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { showBudgetDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
+                ) {
+                    Text("Set Budget", color = Color.White)
+                }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = incomeColor)) { Text("Add Income", color = Color.White) }
-                Button(onClick = { showBudgetDialog = true }, modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)) { Text("Set Budget", color = Color.White) }
-                Button(onClick = { showExpenseDialog = true }, modifier = Modifier.width(120.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)) { Text("Add Expense", color = Color.White) }
+                Button(
+                    onClick = { showExpenseDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
+                ) {
+                    Text("Add Expense", color = Color.White)
+                }
             }
+
 // ================= Recent Transactions =================
             Row(
                 modifier = Modifier
@@ -309,9 +321,9 @@ fun HomeScreen(navController: NavHostController) {
             val filteredExpenses = dashboardVM.expenseList
                 .mapNotNull { expense ->
                     try {
-                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy")
-                        val localDate = java.time.LocalDate.parse(expense.date, formatter)
-                        val expenseMonth = java.time.YearMonth.from(localDate)
+                        val formatter = DateTimeFormatter.ofPattern("d/M/yyyy")
+                        val localDate = LocalDate.parse(expense.date, formatter)
+                        val expenseMonth = YearMonth.from(localDate)
                         if (expenseMonth == selectedDate) expense else null
                     } catch (e: Exception) {
                         null
@@ -319,10 +331,10 @@ fun HomeScreen(navController: NavHostController) {
                 }
                 .sortedByDescending {
                     try {
-                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy HH:mm")
-                        java.time.LocalDateTime.parse("${it.date} ${it.time}", formatter)
+                        val formatter = DateTimeFormatter.ofPattern("d/M/yyyy HH:mm")
+                        LocalDateTime.parse("${it.date} ${it.time}", formatter)
                     } catch (e: Exception) {
-                        java.time.LocalDateTime.MIN
+                        LocalDateTime.MIN
                     }
                 }
 
@@ -392,7 +404,7 @@ fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: Y
     val currentMonth = remember { YearMonth.now() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
         IconButton(onClick = { sharedMonthViewModel.previousMonth() }) { Icon(Icons.Default.ArrowBack, "Prev") }
@@ -438,39 +450,121 @@ fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, 
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseInputDialog(onConfirm: (String,String,Int,String,String)->Unit, onDismiss:()->Unit) {
+fun ExpenseInputDialog(
+    onConfirm: (String, String, Int, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
     var title by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Food") }
     var amount by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
-    val categories = listOf("Food","Shopping","Travel","Utensils","Health","Education")
+
+    // error states
+    var titleError by remember { mutableStateOf(false) }
+    var amountError by remember { mutableStateOf(false) }
+    var dateError by remember { mutableStateOf(false) }
+    var timeError by remember { mutableStateOf(false) }
+
+    val categories = listOf("Food", "Shopping", "Travel", "Utensils", "Health", "Education")
+    var expanded by remember { mutableStateOf(false) }
+
     AlertDialog(
-        onDismissRequest=onDismiss,
-        title={ Text("Add Expense") },
-        text={
+        onDismissRequest = onDismiss,
+        title = { Text("Add Expense") },
+        text = {
             Column {
-                OutlinedTextField(value=title, onValueChange={title=it}, label={Text("Title")}, singleLine=true)
-                Spacer(Modifier.height(4.dp))
-                var expanded by remember { mutableStateOf(false) }
-                Box {
-                    OutlinedTextField(value=category, onValueChange={category=it}, label={Text("Category")}, readOnly=true, modifier=Modifier.fillMaxWidth().clickable { expanded=true })
-                    DropdownMenu(expanded=expanded, onDismissRequest={expanded=false}) {
-                        categories.forEach { cat -> DropdownMenuItem(text={Text(cat)}, onClick={ category=cat; expanded=false }) }
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it; titleError = false },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    isError = titleError
+                )
+                if (titleError) {
+                    Text("Title is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Dropdown for category
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = {
+                                    category = cat
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(value=amount, onValueChange={amount=it}, label={Text("Amount")}, singleLine=true)
-                Spacer(Modifier.height(4.dp))
+
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it; amountError = false },
+                    label = { Text("Amount") },
+                    singleLine = true,
+                    isError = amountError
+                )
+                if (amountError) {
+                    Text("Enter a valid amount", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+
+                Spacer(Modifier.height(8.dp))
+
                 DateAndTimePicker(date,time,{date=it},{time=it})
-//                OutlinedTextField(value=date, onValueChange={date=it}, label={Text("Date (YYYY-MM-DD)")}, singleLine=true)
-//                Spacer(Modifier.height(4.dp))
-//                OutlinedTextField(value=time, onValueChange={time=it}, label={Text("Time (HH:MM)")}, singleLine=true)
+                if (dateError) {
+                    Text("Date is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                if (timeError) {
+                    Text("Time is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
-        confirmButton={ TextButton(onClick={ onConfirm(title,category,amount.toIntOrNull()?:0,date,time) }) { Text("Save") } },
-        dismissButton={ TextButton(onClick=onDismiss){ Text("Cancel") } }
+        confirmButton = {
+            TextButton(onClick = {
+                // validate
+                var valid = true
+                if (title.isBlank()) { titleError = true; valid = false }
+                if (amount.toIntOrNull() == null || amount.isBlank()) { amountError = true; valid = false }
+                if (date.isBlank()) { dateError = true; valid = false }
+                if (time.isBlank()) { timeError = true; valid = false }
+
+                if (valid) {
+                    onConfirm(title, category, amount.toInt(), date, time)
+                }
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
     )
 }
 
@@ -493,7 +587,7 @@ fun TransactionItem(expense: Expenses) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BudgetProgressBox(expenses: Int, budget: Int) {
-    val today = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
+    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
     val percentage = if (budget > 0) ((expenses.toFloat() / budget) * 100).toInt() else 0
 
     Box(
@@ -502,7 +596,7 @@ fun BudgetProgressBox(expenses: Int, budget: Int) {
             .height(100.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(
-                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                brush = Brush.horizontalGradient(
                     colors = listOf(Color(0xFF2196F3), Color(0xFF26A69A))
                 )
             )
