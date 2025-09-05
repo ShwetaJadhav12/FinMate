@@ -235,14 +235,42 @@ fun HomeScreen(navController: NavHostController) {
 
             MonthSelector(sharedMonthViewModel, selectedDate)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
-                DashboardCard("Income", dashboardVM.income, incomeColor)
-                DashboardCard("Expenses", dashboardVM.expenses, expensesColor)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(13.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                DashboardCard(
+                    "Income",
+                    dashboardVM.income,
+                    incomeColor,
+                    modifier = Modifier.weight(1f)
+                )
+                DashboardCard(
+                    "Expenses",
+                    dashboardVM.expenses,
+                    expensesColor,
+                    modifier = Modifier.weight(1f)
+                )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
-                DashboardCard("Budget", dashboardVM.budget, budgetColor)
-                DashboardCard("Remaining", dashboardVM.remaining, remainingColor)
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(13.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                DashboardCard(
+                    "Budget",
+                    dashboardVM.budget,
+                    budgetColor,
+                    modifier = Modifier.weight(1f)
+                )
+                DashboardCard(
+                    "Remaining",
+                    dashboardVM.remaining,
+                    remainingColor,
+                    modifier = Modifier.weight(1f)
+                )
             }
+
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { showIncomeDialog = true }, modifier = Modifier.weight(1f),
@@ -253,15 +281,29 @@ fun HomeScreen(navController: NavHostController) {
                     colors = ButtonDefaults.buttonColors(containerColor = expensesColor)) { Text("Add Expense", color = Color.White) }
             }
 // ================= Recent Transactions =================
-            // ================= Recent Transactions =================
-            // ================= Recent Transactions =================
-            // ================= Recent Transactions =================
-            Text(
-                "Recent Transactions",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Recent Transactions",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                )
+
+                Text(
+                    text = "Show More",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    modifier = Modifier.clickable {
+                        // Navigate to AllTransactionsScreen
+                        navController.navigate("showMoreTransactions/${selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))}")
+                    }
+                )
+            }
+
 
 // Flexible formatter for d/M/yyyy
             val filteredExpenses = dashboardVM.expenseList
@@ -362,21 +404,27 @@ fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: Y
 }
 
 @Composable
-fun DashboardCard(title: String, amount: Int, color: Color) {
-    Box(
-        modifier = Modifier
-            .height(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(color.copy(alpha = 0.2f))
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+fun DashboardCard(title: String, value: Int, color: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = color),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Text("₹ $amount", fontSize = 22.sp, fontWeight = FontWeight.Bold, color=color)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = title, fontSize = 16.sp, color = Color.White)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "₹$value", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
+
 
 @Composable
 fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {

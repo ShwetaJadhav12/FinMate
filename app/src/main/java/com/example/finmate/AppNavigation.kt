@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,8 +21,10 @@ import com.example.finmate.pages.ProfilePage
 import com.example.finmate.pages.ShowMoreTransactionsScreen
 import com.example.finmate.pages.SignupScreen
 import com.example.finmate.speechtotext.SpeechToTextScreen
+import com.example.finmate.viewmodel.DashboardViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import java.time.YearMonth
 
 @SuppressLint("ComposableDestinationInComposeScope")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -31,10 +34,13 @@ fun AppNavigation(
 ) {
     val navController = rememberNavController()
     GlobNavigation.navController = navController
+    val dashboardVM: DashboardViewModel = viewModel()
+
 
     // check if user is already logged in
     val isLoggedIn = Firebase.auth.currentUser != null
     val firstPage = if (isLoggedIn) "home" else "auth"
+
 
     NavHost(
         navController = navController,
@@ -96,6 +102,13 @@ fun AppNavigation(
 
             )
         }
+        // More transactions page
+        composable("showMoreTransactions/{monthId}") { backStackEntry ->
+            val monthId = backStackEntry.arguments?.getString("monthId") ?: ""
+            val selectedMonth = YearMonth.parse(monthId) // yyyy-MM
+            ShowMoreTransactionsScreen(selectedMonth = selectedMonth)
+        }
+
 
         // Add Expense
         composable("addexpense") { // ✅ renamed to match navigation
@@ -114,11 +127,11 @@ fun AppNavigation(
         }
 
         // More transactions page
-        composable("showMoreTransactions") {
-            ShowMoreTransactionsScreen()
+
         }
+
     }
-}
+
 
 // Global navigation holder
 object GlobNavigation {
