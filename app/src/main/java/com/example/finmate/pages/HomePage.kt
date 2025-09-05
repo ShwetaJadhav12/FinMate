@@ -41,6 +41,7 @@ import java.time.format.DateTimeFormatter
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.ui.graphics.Brush
 import androidx.core.app.NotificationCompat
 import com.example.finmate.components.DateAndTimePicker
@@ -271,26 +272,37 @@ fun HomeScreen(navController: NavHostController) {
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { showBudgetDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Set Budget", color = Color.White)
+                    Button(
+                        onClick = { showBudgetDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
+                    ) {
+                        Text("Set Budget", color = Color.White)
+                    }
+
+                    Button(
+                        onClick = { showExpenseDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
+                    ) {
+                        Text("Add Expense", color = Color.White)
+                    }
                 }
 
-                Button(
-                    onClick = { showExpenseDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
-                ) {
-                    Text("Add Expense", color = Color.White)
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ✅ Show Top Spending Category
+                TopSpendingCategoryBox(
+
+                    selectedMonth = selectedDate,
+                )
             }
+
 
 // ================= Recent Transactions =================
             Row(
@@ -570,20 +582,45 @@ fun ExpenseInputDialog(
 
 @Composable
 fun TransactionItem(expense: Expenses) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical=4.dp).clickable{}) {
+    val backgroundColor = MaterialTheme.colorScheme.primary   // 🔹 Blue background
+    val textColor = MaterialTheme.colorScheme.onPrimary       // 🔹 Auto-contrasts (white on blue)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable {},
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+    ) {
         Row(
-            modifier=Modifier.fillMaxWidth().background(Color.LightGray.copy(alpha=0.2f), RoundedCornerShape(12.dp)).padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(expense.title, fontWeight=FontWeight.SemiBold)
-                Text(expense.category, fontSize=12.sp, color=Color.Gray)
+                Text(
+                    text = expense.title,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColor
+                )
+                Text(
+                    text = expense.category,
+                    fontSize = 12.sp,
+                    color = textColor.copy(alpha = 0.8f) // lighter white/blue shade
+                )
             }
-            Text("₹ ${expense.amount}", fontWeight=FontWeight.Bold)
+            Text(
+                text = "₹ ${expense.amount}",
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BudgetProgressBox(expenses: Int, budget: Int) {
@@ -620,6 +657,78 @@ fun BudgetProgressBox(expenses: Int, budget: Int) {
                         .padding(top = 4.dp)
                 )
             }
+        }
+    }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+    var topCategory by remember { mutableStateOf<Pair<String, Int>?>(null) }
+    val context = LocalContext.current
+
+    LaunchedEffect(uid, selectedMonth) {
+        if (uid != null) {
+            try {
+                val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(uid)
+                    .collection("summary_data")
+                    .document(monthId)
+                    .collection("expenses")
+                    .get()
+                    .await()
+
+                // Convert to model
+                val expenses = snapshot.documents.mapNotNull { it.toObject(Expenses::class.java) }
+
+
+                // ✅ Group by category and calculate total
+                val categoryTotals = expenses.groupBy { it.category ?: "Other" }
+                    .mapValues { entry ->
+                        entry.value.sumOf { exp ->
+                            exp.amount.toIntOrNull() ?: 0   // safely convert String -> Int
+                        }
+                    }
+
+               // ✅ Find max category
+                val top = categoryTotals.maxByOrNull { it.value }
+                topCategory = top?.toPair()
+
+
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error fetching top category", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // ✅ UI Box
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Column {
+            Text(
+                text = "Top Spending Category",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Color.DarkGray,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = topCategory?.let { "${it.first} - ₹${it.second}" } ?: "No data",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+
+            )
         }
     }
 }
