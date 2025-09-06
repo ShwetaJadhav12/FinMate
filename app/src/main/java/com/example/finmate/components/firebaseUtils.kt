@@ -5,28 +5,33 @@ import com.example.finmate.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.tasks.await
 
-fun fetchExpensesByCategory(
+suspend fun fetchExpensesByCategory(
+    uid: String,
+    monthId: String,
     category: String,
     onSuccess: (List<Expenses>) -> Unit,
     onFailure: (Exception) -> Unit
 ) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    try {
+        val snapshot = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .collection("summary_data")
+            .document(monthId)  // ✅ Only this month
+            .collection("expenses")
+            .whereEqualTo("category", category)
+            .get()
+            .await()
 
-    FirebaseFirestore.getInstance()
-        .collection("users")
-        .document(uid)
-        .collection("expenses")
-        .whereEqualTo("category", category)
-        .get()
-        .addOnSuccessListener { result ->
-            val expenses = result.mapNotNull { it.toObject(Expenses::class.java) }
-            onSuccess(expenses)
-        }
-        .addOnFailureListener { exception ->
-            onFailure(exception)
-        }
+        val expenses = snapshot.documents.mapNotNull { it.toObject(Expenses::class.java)?.copy(id = it.id) }
+        onSuccess(expenses)
+    } catch (e: Exception) {
+        onFailure(e)
+    }
 }
+
 
 fun fetchUserData(
     onSuccess: (User) -> Unit,

@@ -4,29 +4,22 @@ import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.finmate.pages.AddExpenseScreen
-import com.example.finmate.pages.AnalyticsPage
-import com.example.finmate.pages.AuthScreen
-import com.example.finmate.pages.CategoryExpensesScreen
-import com.example.finmate.pages.CategoryGridScreen
-import com.example.finmate.pages.HomeScreen
-import com.example.finmate.pages.LoginScreen
-import com.example.finmate.pages.ProfilePage
-import com.example.finmate.pages.ShowMoreTransactionsScreen
-import com.example.finmate.pages.SignupScreen
+import com.example.finmate.pages.*
 import com.example.finmate.speechtotext.SpeechToTextScreen
 import com.example.finmate.viewmodel.DashboardViewModel
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import java.time.YearMonth
 
-@SuppressLint("ComposableDestinationInComposeScope")
+@SuppressLint("ComposableDestinationInComposeScope", "StateFlowValueCalledInComposition")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
@@ -35,12 +28,11 @@ fun AppNavigation(
     val navController = rememberNavController()
     GlobNavigation.navController = navController
     val dashboardVM: DashboardViewModel = viewModel()
-
+    val sharedMonthViewModel: SharedMonthViewModelnew = viewModel()
 
     // check if user is already logged in
     val isLoggedIn = Firebase.auth.currentUser != null
     val firstPage = if (isLoggedIn) "home" else "auth"
-
 
     NavHost(
         navController = navController,
@@ -53,20 +45,15 @@ fun AppNavigation(
         }
 
         // Authentication
-        composable("auth") {
-            AuthScreen(navController)
-        }
-        composable("login") {
-            LoginScreen(navController)
-        }
-        composable("signup") {
-            SignupScreen(navController)
-        }
+        composable("auth") { AuthScreen(navController) }
+        composable("login") { LoginScreen(navController) }
+        composable("signup") { SignupScreen(navController) }
 
         // Home
         composable("home") {
             HomeScreen(
-                navController = navController
+                navController = navController,
+                sharedMonthViewModel = sharedMonthViewModel
             )
         }
 
@@ -82,10 +69,8 @@ fun AppNavigation(
                 selectedIndex = 3, // Settings selected
                 onTabSelected = { index ->
                     when (index) {
-                        0 -> navController.navigate("home") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                        1 -> navController.navigate("addexpense") // ✅ fixed route
+                        0 -> navController.navigate("home") { popUpTo("home") { inclusive = true } }
+                        1 -> navController.navigate("addexpense")
                         2 -> navController.navigate("categorypage")
                         3 -> {} // already on profile/settings
                     }
@@ -98,40 +83,46 @@ fun AppNavigation(
             AnalyticsPage(
                 selectedIndex = 1,
                 navController = navController,
-
-
             )
         }
+
         // More transactions page
         composable("showMoreTransactions/{monthId}") { backStackEntry ->
-            val monthId = backStackEntry.arguments?.getString("monthId") ?: ""
+            val monthId = backStackEntry.arguments?.getString("monthId") ?: YearMonth.now().toString()
             val selectedMonth = YearMonth.parse(monthId) // yyyy-MM
-            ShowMoreTransactionsScreen(selectedMonth = selectedMonth)
+            ShowMoreTransactionsScreen(
+                selectedMonth = selectedMonth,
+            )
         }
 
-
         // Add Expense
-        composable("addexpense") { // ✅ renamed to match navigation
-            AddExpenseScreen(navController)
+        composable("addexpense") {
+            AddExpenseScreen(
+                navController = navController,
+            )
         }
 
         // Category detail expenses
         composable("categoryExpenses/{categoryName}") { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
-            CategoryExpensesScreen(categoryName)
+            val selectedMonth by sharedMonthViewModel.selectedMonth.collectAsState()
+
+            if (categoryName.isNotEmpty()) {
+                CategoryExpensesScreen(
+                    categoryName = categoryName,
+                    selectedMonth = selectedMonth
+                )
+            }
         }
+
+
 
         // Speech to text page
         composable("speechtotext") {
             SpeechToTextScreen(navController)
         }
-
-        // More transactions page
-
-        }
-
     }
-
+}
 
 // Global navigation holder
 object GlobNavigation {

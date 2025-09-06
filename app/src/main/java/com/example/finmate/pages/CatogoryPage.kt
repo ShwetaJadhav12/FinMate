@@ -1,6 +1,9 @@
 package com.example.finmate.pages
 
+import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,12 +32,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.finmate.GlobNavigation.navController
 import com.example.finmate.R
+import com.example.finmate.SharedMonthViewModelnew
 import com.example.finmate.model.Category
 import com.google.firebase.firestore.FirebaseFirestore
+import java.time.format.DateTimeFormatter
 
 fun fetchCategoriesFromFirestore(
     onSuccess: (List<Category>) -> Unit,
@@ -50,6 +56,8 @@ fun fetchCategoriesFromFirestore(
         .addOnFailureListener { onFailure(it) }
 }
 
+@SuppressLint("StateFlowValueCalledInComposition")
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryGridScreen() {
@@ -57,6 +65,10 @@ fun CategoryGridScreen() {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
 
     val isDark = isSystemInDarkTheme()
+    val sharedMonthViewModelnew: SharedMonthViewModelnew = viewModel()
+    val selectedMonth by sharedMonthViewModelnew.selectedMonth.collectAsState()
+
+    val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
 
     // Adaptive card colors
     val cardGradientColors = if (isDark) {
@@ -145,11 +157,14 @@ fun CategoryGridScreen() {
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+
             itemsIndexed(categories) { _, category ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navController.navigate("categoryExpenses/${category.name}") }
+                        .clickable {
+                            navController.navigate("categoryExpenses/${category.name}")
+                        }
                         .aspectRatio(1f)
                         .shadow(8.dp, RoundedCornerShape(20.dp)),
                     shape = RoundedCornerShape(20.dp),

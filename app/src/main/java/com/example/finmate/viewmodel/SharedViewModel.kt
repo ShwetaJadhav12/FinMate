@@ -1,6 +1,5 @@
 package com.example.finmate
 
-
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -15,8 +14,8 @@ class SharedMonthViewModelnew : ViewModel() {
     val selectedMonth: StateFlow<YearMonth> = _selectedMonth
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun previousMonth() {
-        _selectedMonth.value = _selectedMonth.value.minusMonths(1)
+    fun setMonth(yearMonth: YearMonth) {
+        _selectedMonth.value = yearMonth
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -25,7 +24,7 @@ class SharedMonthViewModelnew : ViewModel() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun setMonth(yearMonth: YearMonth) {
-        _selectedMonth.value = yearMonth
+    fun previousMonth() {
+        _selectedMonth.value = _selectedMonth.value.minusMonths(1)
     }
 }

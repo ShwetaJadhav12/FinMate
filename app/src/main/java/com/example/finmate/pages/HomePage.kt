@@ -7,8 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,6 +40,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Brush
 import androidx.core.app.NotificationCompat
 import com.example.finmate.components.DateAndTimePicker
@@ -121,8 +121,10 @@ private fun saveExpense(expense: Expenses, selectedDate: YearMonth, onSuccess: (
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController) {
-    val sharedMonthViewModel: SharedMonthViewModelnew = viewModel()
+fun HomeScreen(
+    navController: NavHostController,
+    sharedMonthViewModel: SharedMonthViewModelnew   // ✅ use same VM from AppNavigation
+) {
     var userName by remember { mutableStateOf("User") }
     var initialLetter by remember { mutableStateOf("U") }
 
@@ -259,11 +261,11 @@ fun HomeScreen(navController: NavHostController) {
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-               Text("Remaining",
-                   fontWeight = FontWeight.SemiBold,
-                   fontSize = 18.sp
+                Text("Remaining",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
 
-               )
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("₹${dashboardVM.budget - dashboardVM.expenses}",
                     fontWeight = FontWeight.SemiBold,
@@ -360,14 +362,10 @@ fun HomeScreen(navController: NavHostController) {
                     TransactionItem(expense)
                 }
             }
-
-
-
-
         }
     }
 
-    // ================= Dialogs =================
+    // ✅ Dialogs unchanged...
     if (showIncomeDialog) {
         AmountInputDialog(
             title = "Set Income",
@@ -408,7 +406,6 @@ fun HomeScreen(navController: NavHostController) {
         )
     }
 }
-
 // ===================== Components =====================
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -419,10 +416,18 @@ fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: Y
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
-        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) { Icon(Icons.Default.ArrowBack, "Prev") }
-        Text(selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")), fontSize=18.sp, fontWeight=FontWeight.SemiBold)
+        IconButton(onClick = { sharedMonthViewModel.previousMonth() }) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Prev")
+        }
+        Text(
+            selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
         if (selectedDate < currentMonth) {
-            IconButton(onClick = { sharedMonthViewModel.nextMonth() }) { Icon(Icons.Default.ArrowForward, "Next") }
+            IconButton(onClick = { sharedMonthViewModel.nextMonth() }) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Next")
+            }
         }
     }
 }
@@ -430,8 +435,7 @@ fun MonthSelector(sharedMonthViewModel: SharedMonthViewModelnew, selectedDate: Y
 @Composable
 fun DashboardCard(title: String, value: Int, color: Color, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier
-            .height(120.dp),
+        modifier = modifier.height(120.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = color),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -449,7 +453,6 @@ fun DashboardCard(title: String, value: Int, color: Color, modifier: Modifier = 
     }
 }
 
-
 @Composable
 fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf(initial) }
@@ -457,7 +460,7 @@ fun AmountInputDialog(title: String, initial: String, onConfirm: (Int) -> Unit, 
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { OutlinedTextField(value=text, onValueChange={text=it}, label={Text("Amount")}, singleLine=true) },
-        confirmButton = { TextButton(onClick={ onConfirm(text.toIntOrNull()?:0) }) { Text("Save") } },
+        confirmButton = { TextButton(onClick={ onConfirm(text.toIntOrNull() ?: 0) }) { Text("Save") } },
         dismissButton = { TextButton(onClick=onDismiss){ Text("Cancel") } }
     )
 }
@@ -474,7 +477,6 @@ fun ExpenseInputDialog(
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
 
-    // error states
     var titleError by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
     var dateError by remember { mutableStateOf(false) }
@@ -501,7 +503,6 @@ fun ExpenseInputDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Dropdown for category
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
@@ -512,9 +513,7 @@ fun ExpenseInputDialog(
                         readOnly = true,
                         label = { Text("Category") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -546,44 +545,31 @@ fun ExpenseInputDialog(
                 }
 
                 Spacer(Modifier.height(8.dp))
-
-                DateAndTimePicker(date,time,{date=it},{time=it})
-                if (dateError) {
-                    Text("Date is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-                if (timeError) {
-                    Text("Time is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
+                DateAndTimePicker(date, time, { date = it }, { time = it })
+                if (dateError) Text("Date is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                if (timeError) Text("Time is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                // validate
                 var valid = true
                 if (title.isBlank()) { titleError = true; valid = false }
                 if (amount.toIntOrNull() == null || amount.isBlank()) { amountError = true; valid = false }
                 if (date.isBlank()) { dateError = true; valid = false }
                 if (time.isBlank()) { timeError = true; valid = false }
-
-                if (valid) {
-                    onConfirm(title, category, amount.toInt(), date, time)
-                }
-            }) {
-                Text("Save")
-            }
+                if (valid) { onConfirm(title, category, amount.toInt(), date, time) }
+            }) { Text("Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
 
 @Composable
 fun TransactionItem(expense: Expenses) {
-    val backgroundColor = MaterialTheme.colorScheme.primary   // 🔹 Blue background
-    val textColor = MaterialTheme.colorScheme.onPrimary       // 🔹 Auto-contrasts (white on blue)
+    val backgroundColor = MaterialTheme.colorScheme.primary
+    val textColor = MaterialTheme.colorScheme.onPrimary
 
     Card(
         modifier = Modifier
@@ -594,29 +580,15 @@ fun TransactionItem(expense: Expenses) {
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = expense.title,
-                    fontWeight = FontWeight.SemiBold,
-                    color = textColor
-                )
-                Text(
-                    text = expense.category,
-                    fontSize = 12.sp,
-                    color = textColor.copy(alpha = 0.8f) // lighter white/blue shade
-                )
+                Text(text = expense.title, fontWeight = FontWeight.SemiBold, color = textColor)
+                Text(text = expense.category, fontSize = 12.sp, color = textColor.copy(alpha = 0.8f))
             }
-            Text(
-                text = "₹ ${expense.amount}",
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
+            Text(text = "₹ ${expense.amount}", fontWeight = FontWeight.Bold, color = textColor)
         }
     }
 }
@@ -632,11 +604,7 @@ fun BudgetProgressBox(expenses: Int, budget: Int) {
             .fillMaxWidth()
             .height(100.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF2196F3), Color(0xFF26A69A))
-                )
-            )
+            .background(brush = Brush.horizontalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF26A69A))))
             .padding(16.dp)
     ) {
         Column(
@@ -650,16 +618,13 @@ fun BudgetProgressBox(expenses: Int, budget: Int) {
                     progress = (percentage.coerceIn(0, 100) / 100f),
                     color = Color.White,
                     trackColor = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .padding(top = 4.dp)
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).padding(top = 4.dp)
                 )
             }
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
@@ -671,7 +636,6 @@ fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
         if (uid != null) {
             try {
                 val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-
                 val snapshot = FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(uid)
@@ -680,31 +644,16 @@ fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
                     .collection("expenses")
                     .get()
                     .await()
-
-                // Convert to model
                 val expenses = snapshot.documents.mapNotNull { it.toObject(Expenses::class.java) }
-
-
-                // ✅ Group by category and calculate total
                 val categoryTotals = expenses.groupBy { it.category ?: "Other" }
-                    .mapValues { entry ->
-                        entry.value.sumOf { exp ->
-                            exp.amount.toIntOrNull() ?: 0   // safely convert String -> Int
-                        }
-                    }
-
-               // ✅ Find max category
-                val top = categoryTotals.maxByOrNull { it.value }
-                topCategory = top?.toPair()
-
-
+                    .mapValues { entry -> entry.value.sumOf { it.amount.toIntOrNull() ?: 0 } }
+                topCategory = categoryTotals.maxByOrNull { it.value }?.toPair()
             } catch (e: Exception) {
                 Toast.makeText(context, "Error fetching top category", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ✅ UI Box
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -712,23 +661,10 @@ fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
             .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
-        Column {
-            Text(
-                text = "Top Spending Category",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = Color.DarkGray,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Top Spending Category", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.DarkGray)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = topCategory?.let { "${it.first} - ₹${it.second}" } ?: "No data",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color.Black,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-
-            )
+            Text(topCategory?.let { "${it.first} - ₹${it.second}" } ?: "No data", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
         }
     }
 }

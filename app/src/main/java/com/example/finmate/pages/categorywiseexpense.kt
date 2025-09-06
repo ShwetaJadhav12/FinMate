@@ -1,13 +1,9 @@
 package com.example.finmate.pages
 
+import android.os.Build
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,84 +16,104 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.finmate.GlobNavigation.navController
 import com.example.finmate.components.ExpenseCard
-import com.example.finmate.components.GradientDashboardCard
 import com.example.finmate.components.fetchExpensesByCategory
 import com.example.finmate.model.Expenses
+import com.google.firebase.auth.FirebaseAuth
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryExpensesScreen(categoryName: String) {
+fun CategoryExpensesScreen(
+    categoryName: String,
+    selectedMonth: YearMonth
+) {
     var expenses by remember { mutableStateOf<List<Expenses>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
 
-    // 🔁 Fetch expenses by category
-    LaunchedEffect(categoryName) {
-        fetchExpensesByCategory(
-            category = categoryName,
-            onSuccess = {
-                expenses = it
-                isLoading = false
-            },
-            onFailure = {
-                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                isLoading = false
-            }
-        )
+    // Format month as yyyy-MM
+    val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+
+    // 🔁 Fetch expenses of this category for the selected month
+    LaunchedEffect(categoryName, selectedMonth) {
+        if (uid != null) {
+            isLoading = true
+            fetchExpensesByCategory(
+                uid = uid,
+                monthId = monthId,
+                category = categoryName,
+                onSuccess = { fetchedExpenses ->
+                    expenses = fetchedExpenses
+                    isLoading = false
+                },
+                onFailure = { error ->
+                    Toast.makeText(context, "Failed to fetch: ${error.message}", Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                }
+            )
+        }
     }
 
-    // Helper to calculate total spent
+    // Total spent for this category in the month
     fun totalSpent(): Int = expenses.sumOf { it.amount.toIntOrNull() ?: 0 }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "$categoryName Expenses") },
+                title = { Text(text = "$categoryName Expenses ($monthId)") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3198F1))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).padding(12.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(12.dp)
+        ) {
 
-            // ✅ Budget & Spent cards
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF9E79F))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Spent",
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,)
-                        Text("₹ ${totalSpent()}",
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
+            // Total Spent Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Total Spent", style = MaterialTheme.typography.titleMedium)
+                    Text("₹ ${totalSpent()}", style = MaterialTheme.typography.titleLarge)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-            } else {
-                LazyColumn {
-                    items(expenses) { expense ->
-                        ExpenseCard(
-                            expense = expense,
-                            onExpenseDeleted = { amountDeleted ->
-                                expenses = expenses.filter { it.id != expense.id }
-                            },
-                            onExpenseUpdated = { newAmount, oldAmount ->
-                                expenses = expenses.map {
-                                    if (it.id == expense.id) it.copy(amount = newAmount.toString()) else it
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                }
+                expenses.isEmpty() -> {
+                    Text("No expenses found for $categoryName in $monthId")
+                }
+                else -> {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(expenses) { expense ->
+                            ExpenseCard(
+                                expense = expense,
+                                onExpenseDeleted = { _ ->
+                                    expenses = expenses.filter { it.id != expense.id }
+                                },
+                                onExpenseUpdated = { newAmount, _ ->
+                                    expenses = expenses.map {
+                                        if (it.id == expense.id) it.copy(amount = newAmount.toString()) else it
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
