@@ -40,6 +40,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Brush
@@ -568,30 +569,52 @@ fun ExpenseInputDialog(
 
 @Composable
 fun TransactionItem(expense: Expenses) {
-    val backgroundColor = MaterialTheme.colorScheme.primary
-    val textColor = MaterialTheme.colorScheme.onPrimary
+    // Light blue background same as your ShowMoreTransactionsScreen
+    val isDarkTheme = isSystemInDarkTheme()
+
+    // Light blue background for light theme, darker blue for dark theme
+    val backgroundColor = if (!isDarkTheme) Color(0xFFA0CEEE) else Color(0xFF325279)
+
+    // Text colors adapt based on background luminance
+    val textColor = if (backgroundColor.luminance() > 0.5f) Color.Black else Color.White
+    val secondaryTextColor = textColor.copy(alpha = 0.7f)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable {},
+            .clickable { },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(text = expense.title, fontWeight = FontWeight.SemiBold, color = textColor)
-                Text(text = expense.category, fontSize = 12.sp, color = textColor.copy(alpha = 0.8f))
+                Text(
+                    text = expense.title,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColor
+                )
+                Text(
+                    text = expense.category,
+                    fontSize = 12.sp,
+                    color = secondaryTextColor
+                )
             }
-            Text(text = "₹ ${expense.amount}", fontWeight = FontWeight.Bold, color = textColor)
+            Text(
+                text = "₹ ${expense.amount}",
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
         }
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -657,13 +680,13 @@ fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(50.dp)
             .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Top Spending Category", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.DarkGray)
-            Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Top Spending Category: ", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.DarkGray)
+            Spacer(modifier = Modifier.width(6.dp))
             Text(topCategory?.let { "${it.first} - ₹${it.second}" } ?: "No data", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
         }
     }
