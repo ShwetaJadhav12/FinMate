@@ -81,7 +81,6 @@ fun AppNavigation(
         // Analytics
         composable("analytics") {
             AnalyticsPage(
-                selectedIndex = 1,
                 navController = navController,
             )
         }
