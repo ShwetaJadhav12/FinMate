@@ -262,22 +262,30 @@ fun AnalyticsPage(
             Spacer(modifier = Modifier.height(16.dp))
 
             when (selectedOption) {
+// Inside AnalyticsPage -> when (selectedOption) { "Monthly Analysis" -> { ... } }
                 "Monthly Analysis" -> {
                     if (monthlyData.isEmpty()) {
                         Text("No monthly data available")
                     } else {
+                        var showDialog by remember { mutableStateOf(false) }
+                        var selectedMonthData by remember { mutableStateOf<Pair<YearMonth, MonthData>?>(null) }
+
                         Column(
                             modifier = Modifier.verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             monthlyData.forEach { (month, data) ->
                                 Card(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedMonthData = month to data
+                                            showDialog = true
+                                        },
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
-                                        // Month Title
                                         Text(
                                             text = month.toString(),
                                             fontSize = 20.sp,
@@ -287,13 +295,12 @@ fun AnalyticsPage(
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
-                                        // Budget
                                         Text("Budget: ₹${data.budget.toInt()}", fontSize = 16.sp)
+                                        Text(
+                                            "Remaining: ₹${data.budget - data.expenses.sumOf { it.amount }}",
+                                            fontSize = 16.sp
+                                        )
 
-                                        // Remaining
-                                        Text("Remaining: ₹${data.budget - data.expenses.sumOf{it.amount}}", fontSize = 16.sp)
-
-                                        // ✅ Total Expenses
                                         val totalExpenses = data.expenses.sumOf { it.amount }
                                         Text(
                                             "Total Expenses: ₹$totalExpenses",
@@ -304,6 +311,52 @@ fun AnalyticsPage(
                                     }
                                 }
                             }
+                        }
+
+                        // ------------------ Dialog ------------------
+                        if (showDialog && selectedMonthData != null) {
+                            val (month, data) = selectedMonthData!!
+
+                            AlertDialog(
+                                onDismissRequest = { showDialog = false },
+                                confirmButton = {
+                                    TextButton(onClick = { showDialog = false }) {
+                                        Text("Close")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        // 👉 Add your PDF generation + download logic here
+                                        // e.g. generateMonthlyReport(month, data)
+                                        showDialog = false
+                                    }) {
+                                        Text("Download")
+                                    }
+                                },
+                                title = { Text("Summary - $month") },
+                                text = {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Budget: ₹${data.budget.toInt()}", fontSize = 16.sp)
+                                        Text(
+                                            "Remaining: ₹${data.budget - data.expenses.sumOf { it.amount }}",
+                                            fontSize = 16.sp
+                                        )
+                                        val totalExpenses = data.expenses.sumOf { it.amount }
+                                        Text("Total Expenses: ₹$totalExpenses", fontSize = 16.sp)
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("Category Breakdown:", fontWeight = FontWeight.SemiBold)
+
+                                        data.expenses.groupBy { it.category }.forEach { (category, items) ->
+                                            val sum = items.sumOf { it.amount }
+                                            Text("- $category: ₹$sum")
+                                        }
+                                    }
+                                }
+                            )
                         }
                     }
                 }

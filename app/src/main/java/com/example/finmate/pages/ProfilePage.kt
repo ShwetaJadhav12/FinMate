@@ -1,14 +1,11 @@
 package com.example.finmate.pages
 
+import android.annotation.SuppressLint
 import android.widget.Toast
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -26,36 +23,114 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.finmate.GlobNavigation
 import com.example.finmate.R
+import com.example.finmate.SharedMonthViewModelnew
 import com.example.finmate.components.EditProfileDialog
 import com.example.finmate.components.fetchUserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.time.YearMonth
 
+// -------------------
+// Data Class
+// -------------------
+data class MonthlySummary(
+    val income: Double = 0.0,
+    val budget: Double = 0.0,
+    val expenses: Double = 0.0,
+    val remaining: Double = 0.0
+)
+
+// -------------------
+// Firestore Fetch
+// -------------------
+suspend fun fetchMonthlySummary(month: String): MonthlySummary? {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
+    val docRef = FirebaseFirestore.getInstance()
+        .collection("users")
+        .document(uid)
+        .collection("summary_data")
+        .document(month)
+
+    val snapshot = docRef.get().await()
+    return if (snapshot.exists()) {
+        val budget = snapshot.getDouble("budget") ?: 0.0
+        val expenses = snapshot.getDouble("expenses") ?: 0.0
+        MonthlySummary(
+            income = snapshot.getDouble("income") ?: 0.0,
+            budget = budget,
+            expenses = expenses,
+            remaining = budget - expenses
+        )
+    } else null
+}
+
+// -------------------
+// Summary Dialog
+// -------------------
+@Composable
+fun SummaryCardDialog(
+    month: String,
+    summary: MonthlySummary,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Summary - $month") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Income: ₹${summary.income}", fontSize = 16.sp)
+                Text("Budget: ₹${summary.budget}", fontSize = 16.sp)
+                Text("Expenses: ₹${summary.expenses}", fontSize = 16.sp)
+                Text(
+                    "Remaining: ₹${summary.remaining}",
+                    fontSize = 16.sp,
+                    color = if (summary.remaining >= 0) Color(0xFF4CAF50) else Color(0xFFD32F2F)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        }
+    )
+}
+
+// -------------------
+// Profile Page
+// -------------------
+@SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilePage(
     navController: NavController,
+    sharedMonthViewModel: SharedMonthViewModelnew, // 🔹 take selected month from HomeScreen
     selectedIndex: Int = 3,
     onTabSelected: (Int) -> Unit
 ) {
     val context = LocalContext.current
-    var selectedIndex by remember { mutableStateOf(3) } // Default to Profile page
+    var selectedIndex by remember { mutableStateOf(3) }
 
     var showeditpage by remember { mutableStateOf(false) }
     var userName by remember { mutableStateOf("Loading...") }
     var userEmail by remember { mutableStateOf("Loading...") }
 
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-
-    // Dynamic colors
     val primaryColor = MaterialTheme.colorScheme.primary
     val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val buttonColor = if (isDarkTheme) Color(0xFF12648D) else Color(0xFF2196F3)
+
+    // Summary states
+    var showSummaryDialog by remember { mutableStateOf(false) }
+    var summaryData by remember { mutableStateOf<MonthlySummary?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 🔹 Get selected month from SharedMonthViewModel
+    val selectedMonth by sharedMonthViewModel.selectedMonth.collectAsState()
 
     LaunchedEffect(Unit) {
         fetchUserData(
@@ -174,18 +249,25 @@ fun ProfilePage(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    Toast.makeText(context, "Get Your Summary card", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.fillMaxWidth(0.8f),
-                colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
-            ) {
-                Text("Summary Card", color = Color.White)
-            }
+//            Button(
+//                onClick = {
+//                    coroutineScope.launch {
+//                        val result = fetchMonthlySummary(selectedMonth.toString())
+//                        if (result != null) {
+//                            summaryData = result
+//                            showSummaryDialog = true
+//                        } else {
+//                            Toast.makeText(context, "No summary data found", Toast.LENGTH_SHORT).show()
+//                        }
+//                    }
+//                },
+//                modifier = Modifier.fillMaxWidth(0.8f),
+//                colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
+//            ) {
+//                Text("Summary Card", color = Color.White)
+//            }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             Button(
                 onClick = {
                     FirebaseAuth.getInstance().signOut()
@@ -200,5 +282,14 @@ fun ProfilePage(
                 Text("Logout", color = Color.White)
             }
         }
+    }
+
+    // Show dialog when summary is ready
+    if (showSummaryDialog && summaryData != null) {
+        SummaryCardDialog(
+            month = selectedMonth.toString(),
+            summary = summaryData!!,
+            onDismiss = { showSummaryDialog = false }
+        )
     }
 }
