@@ -9,6 +9,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.drawToBitmap
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun saveMonthlyBudgetToFirebase(
@@ -106,4 +111,9 @@ fun getIncomeFromFirestore(
     } else {
         onFailure(Exception("User not logged in"))
     }
+}
+
+
+fun captureViewAsBitmap(view: View): Bitmap {
+    return view.drawToBitmap()
 }

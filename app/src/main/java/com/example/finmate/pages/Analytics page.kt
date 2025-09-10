@@ -1,7 +1,9 @@
 package com.example.finmate.pages
 
+import android.graphics.Bitmap
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -22,12 +24,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.finmate.R
+import com.example.finmate.components.captureViewAsBitmap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.YearMonth
@@ -316,6 +321,8 @@ fun AnalyticsPage(
                         // ------------------ Dialog ------------------
                         if (showDialog && selectedMonthData != null) {
                             val (month, data) = selectedMonthData!!
+                            val context = LocalContext.current
+                            val view = LocalView.current
 
                             AlertDialog(
                                 onDismissRequest = { showDialog = false },
@@ -326,8 +333,16 @@ fun AnalyticsPage(
                                 },
                                 dismissButton = {
                                     TextButton(onClick = {
-                                        // 👉 Add your PDF generation + download logic here
-                                        // e.g. generateMonthlyReport(month, data)
+                                        // ✅ Capture current view as Bitmap
+                                        val bitmap = captureViewAsBitmap(view)
+
+                                        // ✅ Save bitmap to Pictures folder
+                                        val filename = "Summary_${month}.png"
+                                        val fos = context.openFileOutput(filename, android.content.Context.MODE_PRIVATE)
+                                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                                        fos.close()
+
+                                        Toast.makeText(context, "Saved as $filename", Toast.LENGTH_SHORT).show()
                                         showDialog = false
                                     }) {
                                         Text("Download")
@@ -358,6 +373,7 @@ fun AnalyticsPage(
                                 }
                             )
                         }
+
                     }
                 }
 
