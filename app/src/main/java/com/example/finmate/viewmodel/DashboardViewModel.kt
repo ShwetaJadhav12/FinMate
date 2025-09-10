@@ -51,9 +51,8 @@ class DashboardViewModel : ViewModel() {
                     .document(monthId)
                     .get()
                     .await()
-                budget = (budgetDoc.getLong("budget")?.toInt()
-                    ?: budgetDoc.getString("amount")?.toIntOrNull()
-                    ?: 0)
+                budget = budgetDoc.getString("budget")?.toIntOrNull() ?: 0
+
 
                 // ----- Load Expenses List -----
                 val expensesSnap = firestore.collection("users")

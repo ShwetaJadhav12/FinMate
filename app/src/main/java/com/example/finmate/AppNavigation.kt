@@ -66,19 +66,18 @@ fun AppNavigation(
         composable("profilepage") {
             ProfilePage(
                 navController = navController,
-                selectedIndex = 3,
-                sharedMonthViewModel = sharedMonthViewModel,
-                onTabSelected = {
-                    when (it) {
-                        0 -> navController.navigate("home")
-                        1 -> navController.navigate("analytics")
+                selectedIndex = 3, // Settings selected
+                onTabSelected = { index ->
+                    when (index) {
+                        0 -> navController.navigate("home") { popUpTo("home") { inclusive = true } }
+                        1 -> navController.navigate("addexpense")
                         2 -> navController.navigate("categorypage")
-                        3 -> navController.navigate("profilepage")
+                        3 -> {} // already on profile/settings
                     }
-                }
+                },
+                sharedMonthViewModel = sharedMonthViewModel
             )
         }
-
 
         // Analytics
         composable("analytics") {
