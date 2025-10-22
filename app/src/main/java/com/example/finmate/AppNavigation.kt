@@ -70,7 +70,7 @@ fun AppNavigation(
                 onTabSelected = { index ->
                     when (index) {
                         0 -> navController.navigate("home") { popUpTo("home") { inclusive = true } }
-                        1 -> navController.navigate("addexpense")
+                        1 -> navController.navigate("analytics")
                         2 -> navController.navigate("categorypage")
                         3 -> {} // already on profile/settings
                     }

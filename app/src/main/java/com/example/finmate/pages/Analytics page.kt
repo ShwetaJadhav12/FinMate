@@ -7,8 +7,8 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,7 +38,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.time.YearMonth
 
 // ----------------------------- Data Models -----------------------------
-
 data class CategoryExpense(
     val category: String,
     val amount: Int,
@@ -53,7 +52,6 @@ data class MonthData(
 )
 
 // ----------------------------- Firestore Listener -----------------------------
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun rememberMonthlyData(
@@ -94,8 +92,7 @@ fun rememberMonthlyData(
                                     .addSnapshotListener { expenseSnap, _ ->
                                         val expenses = expenseSnap?.documents?.map { expDoc ->
                                             val amount = expDoc.get("amount").toIntAmount()
-                                            val category =
-                                                expDoc.getString("category") ?: "Others"
+                                            val category = expDoc.getString("category") ?: "Others"
                                             CategoryExpense(
                                                 category,
                                                 amount,
@@ -105,8 +102,7 @@ fun rememberMonthlyData(
                                         } ?: emptyList()
 
                                         tempData[ym] = MonthData(expenses, budget, remaining)
-                                        monthlyData =
-                                            tempData.toSortedMap(compareByDescending { it })
+                                        monthlyData = tempData.toSortedMap(compareByDescending { it })
                                     }
                             }
                         } catch (ex: Exception) {
@@ -120,7 +116,6 @@ fun rememberMonthlyData(
 }
 
 // ----------------------------- Pie Chart -----------------------------
-
 @Composable
 fun PieChart(data: List<CategoryExpense>, modifier: Modifier = Modifier) {
     val total = data.sumOf { it.amount }.toFloat()
@@ -160,7 +155,6 @@ fun PieChartLegend(data: List<CategoryExpense>) {
 }
 
 // ----------------------------- Analytics Screen -----------------------------
-
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -168,6 +162,15 @@ fun AnalyticsPage(
     navController: NavHostController
 ) {
     var selectedIndex by remember { mutableStateOf(1) }
+
+    val isDark = isSystemInDarkTheme()
+
+    // Define adaptive colors
+    val backgroundColor = if (isDark) Color(0xFF121212) else Color(0xFFF5F5F5)
+    val cardBackgroundColor = if (isDark) Color(0xFF1E1E1E) else Color(0xFFE3F2FD)
+    val textPrimaryColor = if (isDark) Color(0xFFBBDEFB) else Color(0xFF1565C0)
+    val textSecondaryColor = if (isDark) Color(0xFFEEEEEE) else Color.Black
+    val errorColor = if (isDark) Color(0xFFFF8A80) else Color(0xFFD32F2F)
 
     val categoryColors = mapOf(
         "Food" to Color(0xFF4CAF50),
@@ -189,8 +192,12 @@ fun AnalyticsPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("FinMate", color = Color.White, fontWeight = FontWeight.SemiBold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
+                title = {
+                    Text("FinMate", color = Color.White, fontWeight = FontWeight.SemiBold)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF2196F3)
+                )
             )
         },
         bottomBar = {
@@ -241,7 +248,7 @@ fun AnalyticsPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(backgroundColor)
                 .padding(innerPadding)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -267,10 +274,9 @@ fun AnalyticsPage(
             Spacer(modifier = Modifier.height(16.dp))
 
             when (selectedOption) {
-// Inside AnalyticsPage -> when (selectedOption) { "Monthly Analysis" -> { ... } }
                 "Monthly Analysis" -> {
                     if (monthlyData.isEmpty()) {
-                        Text("No monthly data available")
+                        Text("No monthly data available", color = textPrimaryColor)
                     } else {
                         var showDialog by remember { mutableStateOf(false) }
                         var selectedMonthData by remember { mutableStateOf<Pair<YearMonth, MonthData>?>(null) }
@@ -288,22 +294,27 @@ fun AnalyticsPage(
                                             showDialog = true
                                         },
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                                    colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text(
                                             text = month.toString(),
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF1565C0)
+                                            color = textPrimaryColor
                                         )
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
-                                        Text("Budget: ₹${data.budget.toInt()}", fontSize = 16.sp)
+                                        Text(
+                                            "Budget: ₹${data.budget.toInt()}",
+                                            fontSize = 16.sp,
+                                            color = textSecondaryColor
+                                        )
                                         Text(
                                             "Remaining: ₹${data.budget - data.expenses.sumOf { it.amount }}",
-                                            fontSize = 16.sp
+                                            fontSize = 16.sp,
+                                            color = textSecondaryColor
                                         )
 
                                         val totalExpenses = data.expenses.sumOf { it.amount }
@@ -311,14 +322,13 @@ fun AnalyticsPage(
                                             "Total Expenses: ₹$totalExpenses",
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFFD32F2F)
+                                            color = errorColor
                                         )
                                     }
                                 }
                             }
                         }
 
-                        // ------------------ Dialog ------------------
                         if (showDialog && selectedMonthData != null) {
                             val (month, data) = selectedMonthData!!
                             val context = LocalContext.current
@@ -333,55 +343,50 @@ fun AnalyticsPage(
                                 },
                                 dismissButton = {
                                     TextButton(onClick = {
-                                        // ✅ Capture current view as Bitmap
                                         val bitmap = captureViewAsBitmap(view)
-
-                                        // ✅ Save bitmap to Pictures folder
                                         val filename = "Summary_${month}.png"
                                         val fos = context.openFileOutput(filename, android.content.Context.MODE_PRIVATE)
                                         bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
                                         fos.close()
-
                                         Toast.makeText(context, "Saved as $filename", Toast.LENGTH_SHORT).show()
                                         showDialog = false
                                     }) {
                                         Text("Download")
                                     }
                                 },
-                                title = { Text("Summary - $month") },
+                                title = { Text("Summary - $month", color = textPrimaryColor) },
                                 text = {
                                     Column(
                                         verticalArrangement = Arrangement.spacedBy(6.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Budget: ₹${data.budget.toInt()}", fontSize = 16.sp)
+                                        Text("Budget: ₹${data.budget.toInt()}", fontSize = 16.sp, color = textSecondaryColor)
                                         Text(
                                             "Remaining: ₹${data.budget - data.expenses.sumOf { it.amount }}",
-                                            fontSize = 16.sp
+                                            fontSize = 16.sp,
+                                            color = textSecondaryColor
                                         )
                                         val totalExpenses = data.expenses.sumOf { it.amount }
-                                        Text("Total Expenses: ₹$totalExpenses", fontSize = 16.sp)
+                                        Text("Total Expenses: ₹$totalExpenses", fontSize = 16.sp, color = errorColor)
 
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text("Category Breakdown:", fontWeight = FontWeight.SemiBold)
+                                        Text("Category Breakdown:", fontWeight = FontWeight.SemiBold, color = textSecondaryColor)
 
                                         data.expenses.groupBy { it.category }.forEach { (category, items) ->
                                             val sum = items.sumOf { it.amount }
-                                            Text("- $category: ₹$sum")
+                                            Text("- $category: ₹$sum", color = textSecondaryColor)
                                         }
                                     }
                                 }
                             )
                         }
-
                     }
                 }
 
                 "Category-wise Distribution" -> {
                     if (monthlyData.isEmpty()) {
-                        Text("No expenses available")
+                        Text("No expenses available", color = textPrimaryColor)
                     } else {
-                        // Select Month Dropdown
                         var monthExpanded by remember { mutableStateOf(false) }
                         Box {
                             Button(onClick = { monthExpanded = true }) {
@@ -408,15 +413,14 @@ fun AnalyticsPage(
                         selectedMonth?.let { month ->
                             val expenses = monthlyData[month]?.expenses ?: emptyList()
                             if (expenses.isEmpty()) {
-                                Text("No expenses in $month")
+                                Text("No expenses in $month", color = textSecondaryColor)
                             } else {
-                                // ✅ Group by category and sum amounts
                                 val grouped = expenses.groupBy { it.category }.map { (category, items) ->
                                     CategoryExpense(
                                         category = category,
                                         amount = items.sumOf { it.amount },
                                         color = items.first().color,
-                                        date = "" // not needed for grouped data
+                                        date = ""
                                     )
                                 }
 
@@ -430,7 +434,6 @@ fun AnalyticsPage(
                                 PieChartLegend(grouped)
                             }
                         }
-
                     }
                 }
             }
@@ -439,7 +442,6 @@ fun AnalyticsPage(
 }
 
 // ----------------------------- Helper -----------------------------
-
 fun Any?.toIntAmount(): Int {
     return when (this) {
         is Number -> this.toInt()
@@ -447,6 +449,7 @@ fun Any?.toIntAmount(): Int {
         else -> 0
     }
 }
+
 @Composable
 fun CategoryExpenseDialog(
     category: String,

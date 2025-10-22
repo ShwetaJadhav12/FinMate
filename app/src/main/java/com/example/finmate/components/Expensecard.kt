@@ -84,7 +84,6 @@ fun ExpenseCard(
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
                 }
 
-                // Edit
                 IconButton(
                     onClick = { showEditDialog = true },
                     modifier = Modifier.size(24.dp)

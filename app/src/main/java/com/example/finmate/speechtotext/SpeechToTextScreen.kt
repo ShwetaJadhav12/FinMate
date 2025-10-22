@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.finmate.components.saveExpenseToFirestoreVoice
 import com.example.finmate.model.Expenses
 import saveExpenseToFirestore
 import java.text.SimpleDateFormat
@@ -115,7 +116,7 @@ fun SpeechToTextScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(onClick = {
-                        saveExpenseToFirestore(
+                        saveExpenseToFirestoreVoice(
                             info,
                             onSuccess = {
                                 Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
@@ -124,7 +125,8 @@ fun SpeechToTextScreen(
                                 Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT)
                                     .show()
                             },
-                        )}) {
+                        )
+                    }) {
                         Text("Save")
                     }
                 }
