@@ -153,7 +153,7 @@ fun ProfilePage(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = primaryColor) {
+            NavigationBar(containerColor = Color(0xFF2196F3)) {
                 val items = listOf("Home", "Analytics", "Category", "Settings")
                 val icons = listOf(
                     Icons.Default.Home,
@@ -161,37 +161,30 @@ fun ProfilePage(
                     R.drawable.baseline_category_24,
                     Icons.Default.Settings
                 )
-
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
-                            onTabSelected(index)
+                            when (index) {
+                                0 -> navController.navigate("home")
+                                1 -> navController.navigate("analytics")
+                                2 -> navController.navigate("categorypage")
+                                3 -> navController.navigate("profilepage")
+                            }
                         },
                         icon = {
-                            if (icons[index] is ImageVector) {
-                                Icon(
-                                    imageVector = icons[index] as ImageVector,
-                                    contentDescription = item,
-                                    tint = if (selectedIndex == index) secondaryColor else onPrimaryColor
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = icons[index] as Int),
-                                    contentDescription = item,
-                                    tint = if (selectedIndex == index) secondaryColor else onPrimaryColor
-                                )
-                            }
+                            if (icons[index] is ImageVector) Icon(icons[index] as ImageVector, contentDescription = item)
+                            else Icon(painter = painterResource(id = icons[index] as Int), contentDescription = item)
                         },
                         label = { Text(item, fontSize = 12.sp) },
                         alwaysShowLabel = true,
                         colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = secondaryColor,
-                            selectedIconColor = secondaryColor,
-                            selectedTextColor = secondaryColor,
-                            unselectedIconColor = onPrimaryColor,
-                            unselectedTextColor = onPrimaryColor
+                            indicatorColor = Color(0xFF2196F3),
+                            selectedIconColor = Color(0xFF194365),
+                            selectedTextColor = Color(0xFF194365),
+                            unselectedIconColor = Color.White,
+                            unselectedTextColor = Color.White
                         )
                     )
                 }

@@ -5,6 +5,7 @@ import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,10 +41,21 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    // Detect Dark Theme
+    val isDark = isSystemInDarkTheme()
+
+
+    // 🎨 Dynamic Colors
+    val backgroundColor = if (isDark) Color(0xFF101820) else Color.White
+    val titleColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF073156)
+    val textColor = if (isDark) Color.White else Color.Black
+    val hintColor = if (isDark) Color(0xFFB0BEC5) else Color.Gray
+    val borderColor = if (isDark) Color.White else Color.Black
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(backgroundColor)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -62,25 +74,29 @@ fun LoginScreen(
 
         Text(
             text = "Welcome Back!",
-            style = TextStyle(
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF073156)
-            )
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = titleColor
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Email
+        // ========================= EMAIL FIELD =========================
         OutlinedTextField(
             value = email,
             onValueChange = {
                 email = it
                 emailError = null
             },
-            label = { Text("Email") },
+            label = { Text("Email", color = hintColor) },
             singleLine = true,
+            textStyle = TextStyle(color = textColor),
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                cursorColor = textColor,
+            ),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = emailError != null
@@ -91,17 +107,23 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password
+        // ========================= PASSWORD FIELD =========================
         OutlinedTextField(
             value = password,
             onValueChange = {
                 password = it
                 passwordError = null
             },
-            label = { Text("Password") },
+            label = { Text("Password", color = hintColor) },
             singleLine = true,
+            textStyle = TextStyle(color = textColor),
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                cursorColor = textColor
+            ),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = passwordError != null
@@ -112,6 +134,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ========================= LOGIN BUTTON =========================
         Button(
             onClick = {
                 val valid = validateLoginInputs(
@@ -122,11 +145,13 @@ fun LoginScreen(
                 )
 
                 if (valid) {
+                    isLoading = true
                     authViewModel.Login(email, password) { success, message ->
+                        isLoading = false
                         if (success) {
                             Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-                            navController.navigate("home"){
-                                popUpTo("auth"){inclusive = true}
+                            navController.navigate("home") {
+                                popUpTo("auth") { inclusive = true }
                             }
                         } else {
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -139,17 +164,17 @@ fun LoginScreen(
                 .height(50.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4181D0),
+                containerColor = if (isDark) Color(0xFF1976D2) else Color(0xFF4181D0),
                 contentColor = Color.White
             )
         ) {
-            Text(text = if( isLoading) "Loading..." else "Login", fontSize = 18.sp)
+            Text(text = if (isLoading) "Loading..." else "Login", fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TextButton(onClick = { navController.navigate("signup") }) {
-            Text("Don't have an account? Sign Up", color = Color.Gray)
+            Text("Don't have an account? Sign Up", color = hintColor)
         }
     }
 }
@@ -162,20 +187,32 @@ private fun validateLoginInputs(
 ): Boolean {
     var isValid = true
 
+    // EMAIL
     if (email.isBlank()) {
         onEmailError("Email cannot be empty")
         isValid = false
     } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
         onEmailError("Invalid email format")
         isValid = false
+    } else {
+        onEmailError(null)
     }
 
+    // PASSWORD
     if (password.isBlank()) {
         onPasswordError("Password cannot be empty")
         isValid = false
     } else if (password.length < 6) {
         onPasswordError("Password must be at least 6 characters")
         isValid = false
+    } else if (!password.matches(Regex(".*[A-Za-z].*"))) {
+        onPasswordError("Password must contain letters")
+        isValid = false
+    } else if (!password.matches(Regex(".*[0-9].*"))) {
+        onPasswordError("Password must contain digits")
+        isValid = false
+    } else {
+        onPasswordError(null)
     }
 
     return isValid

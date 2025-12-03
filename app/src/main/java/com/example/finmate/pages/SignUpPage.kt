@@ -5,6 +5,7 @@ import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,10 +45,20 @@ fun SignupScreen(
 
     val context = LocalContext.current
 
+    // 🌙 Detect Dark Theme
+    val isDark = isSystemInDarkTheme()
+
+    // 🎨 Dynamic Colors
+    val backgroundColor = if (isDark) Color(0xFF101820) else Color.White
+    val titleColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF073156)
+    val textColor = if (isDark) Color.White else Color.Black
+    val hintColor = if (isDark) Color(0xFFB0BEC5) else Color.Gray
+    val borderColor = if (isDark) Color.White else Color(0xFF4181D0)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(backgroundColor)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -66,27 +77,33 @@ fun SignupScreen(
 
         Text(
             text = "Create Account",
-            style = TextStyle(
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF073156)
-            )
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = titleColor
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Full Name
+        // ======================= FULL NAME ==========================
         OutlinedTextField(
             value = name,
             onValueChange = {
                 name = it
                 nameError = null
             },
-            label = { Text("Full Name") },
+            label = { Text("Full Name", color = hintColor) },
             singleLine = true,
+            textStyle = TextStyle(color = textColor),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                cursorColor = textColor,
+            ),
+
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = nameError != null
+
         )
         if (nameError != null) {
             Text(text = nameError!!, color = Color.Red, fontSize = 12.sp)
@@ -94,16 +111,22 @@ fun SignupScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Email
+        // ========================= EMAIL ============================
         OutlinedTextField(
             value = email,
             onValueChange = {
                 email = it
                 emailError = null
             },
-            label = { Text("Email") },
+            label = { Text("Email", color = hintColor) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+            textStyle = TextStyle(color = textColor),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                cursorColor = textColor,
+            ),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = emailError != null
@@ -114,17 +137,23 @@ fun SignupScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password
+        // ======================== PASSWORD =========================
         OutlinedTextField(
             value = password,
             onValueChange = {
                 password = it
                 passwordError = null
             },
-            label = { Text("Password") },
+            label = { Text("Password", color = hintColor) },
             singleLine = true,
+            textStyle = TextStyle(color = textColor),
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                cursorColor = textColor,
+            ),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = passwordError != null
@@ -135,6 +164,7 @@ fun SignupScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ========================= SIGNUP BUTTON =========================
         Button(
             onClick = {
                 val valid = validateInputs(
@@ -151,8 +181,6 @@ fun SignupScreen(
                             isLoading = true
                             navController.navigate("home") {
                                 popUpTo("auth") { inclusive = true }
-
-
                             }
                         } else {
                             isLoading = false
@@ -168,20 +196,21 @@ fun SignupScreen(
                 .height(50.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4181D0),
+                containerColor = if (isDark) Color(0xFF1976D2) else Color(0xFF4181D0),
                 contentColor = Color.White
             )
         ) {
-            Text(text = "Sign Up", fontSize = 18.sp)
+            Text("Sign Up", fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TextButton(onClick = { navController.navigate("login") }) {
-            Text("Already have an account? Login", color = Color.Gray)
+            Text("Already have an account? Login", color = hintColor)
         }
     }
 }
+
 
 private fun validateInputs(
     name: String,
@@ -193,25 +222,52 @@ private fun validateInputs(
 ): Boolean {
     var isValid = true
 
+    // ---------------- NAME VALIDATION ----------------
     if (name.isBlank()) {
         onNameError("Name cannot be empty")
         isValid = false
+    } else if (name.length < 3) {
+        onNameError("Name must be at least 3 characters")
+        isValid = false
+    } else if (!name.matches(Regex("^[A-Za-z ]+$"))) {
+        onNameError("Name must contain only letters")
+        isValid = false
+    } else {
+        onNameError(null)
     }
 
+    // ---------------- EMAIL VALIDATION ----------------
     if (email.isBlank()) {
         onEmailError("Email cannot be empty")
         isValid = false
     } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
         onEmailError("Invalid email format")
         isValid = false
+    } else {
+        onEmailError(null)
     }
 
+    // ---------------- PASSWORD VALIDATION ----------------
     if (password.isBlank()) {
         onPasswordError("Password cannot be empty")
         isValid = false
     } else if (password.length < 6) {
         onPasswordError("Password must be at least 6 characters")
         isValid = false
+    } else if (!password.matches(Regex(".*[A-Z].*"))) {
+        onPasswordError("Must contain at least 1 uppercase letter")
+        isValid = false
+    } else if (!password.matches(Regex(".*[a-z].*"))) {
+        onPasswordError("Must contain 1 lowercase letter")
+        isValid = false
+    } else if (!password.matches(Regex(".*[0-9].*"))) {
+        onPasswordError("Must contain 1 digit")
+        isValid = false
+    } else if (!password.matches(Regex(".*[!@#\$%^&*(),.?\":{}|<>].*"))) {
+        onPasswordError("Must contain 1 special character")
+        isValid = false
+    } else {
+        onPasswordError(null)
     }
 
     return isValid
