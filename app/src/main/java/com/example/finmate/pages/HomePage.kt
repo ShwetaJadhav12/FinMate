@@ -50,9 +50,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 // ===================== Colors =====================
-val incomeColor = Color(0xFF4CAF50)
+val  budgetColor = Color(0xFF4CAF50)
 val expensesColor = Color(0xFFF44336)
-val budgetColor = Color(0xFFFF9800)
 val remainingColor = Color(0xFF2196F3)
 
 // ===================== Notification =====================
@@ -229,7 +228,8 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        Column(
+        // ✅ CHANGE 1 → Column → LazyColumn
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
@@ -237,102 +237,87 @@ fun HomeScreen(
                 .background(backgroundColor),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget)
-            MonthSelector(sharedMonthViewModel, selectedDate)
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(13.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                DashboardCard(
-                    "Budegt",
-                    dashboardVM.budget,
-                    incomeColor,
-                    modifier = Modifier.weight(1f)
-                )
-                DashboardCard(
-                    "Expenses",
-                    dashboardVM.expenses,
-                    expensesColor,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            item { BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget) }
 
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Remaining",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
+            item { MonthSelector(sharedMonthViewModel, selectedDate) }
 
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("₹${dashboardVM.budget - dashboardVM.expenses}",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = remainingColor
-                )
-            }
-
-            Column {
+            item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(13.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = { showBudgetDialog = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
-                    ) {
-                        Text("Set Budget", color = Color.White)
-                    }
-
-                    Button(
-                        onClick = { showExpenseDialog = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
-                    ) {
-                        Text("Add Expense", color = Color.White)
-                    }
+                    DashboardCard("Budget", dashboardVM.budget, budgetColor, Modifier.weight(1f))
+                    DashboardCard("Expenses", dashboardVM.expenses, expensesColor, Modifier.weight(1f))
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ✅ Show Top Spending Category
-                TopSpendingCategoryBox(
-
-                    selectedMonth = selectedDate,
-                )
             }
 
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Remaining", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("₹${dashboardVM.budget - dashboardVM.expenses}",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = remainingColor
+                    )
+                }
+            }
 
-// ================= Recent Transactions =================
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Recent Transactions",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
-                )
+            item {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { showBudgetDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = budgetColor)
+                        ) { Text("Set Budget", color = Color.White) }
 
-                Text(
-                    text = "Show More",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
-                    modifier = Modifier.clickable {
-                        // Navigate to AllTransactionsScreen
-                        navController.navigate("showMoreTransactions/${selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))}")
+                        Button(
+                            onClick = { showExpenseDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = expensesColor)
+                        ) { Text("Add Expense", color = Color.White) }
                     }
-                )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TopSpendingCategoryBox(expenses = dashboardVM.expenseList)
+                }
             }
 
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Recent Transactions", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
 
-// Flexible formatter for d/M/yyyy
+                    Text(
+                        text = "Show More",
+                        color = Color.Blue,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        modifier = Modifier.clickable {
+                            navController.navigate(
+                                "showMoreTransactions/${
+                                    selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+                                }"
+                            )
+                        }
+                    )
+                }
+            }
+
+            // FILTERED EXPENSES
             val filteredExpenses = dashboardVM.expenseList
                 .mapNotNull { expense ->
                     try {
@@ -353,18 +338,14 @@ fun HomeScreen(
                     }
                 }
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(filteredExpenses) { expense ->
-                    TransactionItem(expense)
-                }
+            // ✅ CHANGE 2 → Removed .weight(1f)
+            items(filteredExpenses) { expense ->
+                TransactionItem(expense)
             }
         }
     }
+
+
 
     // ✅ Dialogs unchanged...
     if (showIncomeDialog) {
@@ -385,18 +366,45 @@ fun HomeScreen(
     }
     if (showExpenseDialog) {
         AlertDialog(
-            onDismissRequest = { showExpenseDialog=false },
+            onDismissRequest = { showExpenseDialog = false },
             title = { Text("Add Expense") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { showManualExpenseDialog = true; showExpenseDialog=false }, modifier = Modifier.fillMaxWidth()) { Text("Add Manually") }
-                    Button(onClick = { showExpenseDialog=false }, modifier = Modifier.fillMaxWidth()) { Text("Add Using Voice") }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                    // ADD MANUALLY
+                    Button(
+                        onClick = {
+                            showManualExpenseDialog = true
+                            showExpenseDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12648D))
+                    ) {
+                        Text("Add Manually", color = Color.White)
+                    }
+
+                    // ADD USING VOICE
+                    Button(
+                        onClick = {
+                            showExpenseDialog = false
+                            navController.navigate("speechtotext")   // <-- THIS FIXES THE ISSUE
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF174E80))
+                    ) {
+                        Text("Add Using Voice", color = Color.White)
+                    }
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { showExpenseDialog=false }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { showExpenseDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
+
     if (showManualExpenseDialog) {
         ExpenseInputDialog(
             onConfirm = { title, category, amount, date, time ->
@@ -649,45 +657,40 @@ fun BudgetProgressBox(expenses: Int, budget: Int) {
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun TopSpendingCategoryBox(selectedMonth: YearMonth) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid
-    var topCategory by remember { mutableStateOf<Pair<String, Int>?>(null) }
-    val context = LocalContext.current
 
-    LaunchedEffect(uid, selectedMonth) {
-        if (uid != null) {
-            try {
-                val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("users")
-                    .document(uid)
-                    .collection("summary_data")
-                    .document(monthId)
-                    .collection("expenses")
-                    .get()
-                    .await()
-                val expenses = snapshot.documents.mapNotNull { it.toObject(Expenses::class.java) }
-                val categoryTotals = expenses.groupBy { it.category ?: "Other" }
-                    .mapValues { entry -> entry.value.sumOf { it.amount.toIntOrNull() ?: 0 } }
-                topCategory = categoryTotals.maxByOrNull { it.value }?.toPair()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error fetching top category", Toast.LENGTH_SHORT).show()
+@Composable
+fun TopSpendingCategoryBox(expenses: List<Expenses>) {
+    val categoryTotals = remember(expenses) {
+        expenses.groupBy { it.category ?: "Other" }
+            .mapValues { entry ->
+                entry.value.sumOf { it.amount.toIntOrNull() ?: 0 }
             }
-        }
     }
+
+    val topCategory = categoryTotals.maxByOrNull { it.value }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
             .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(12.dp))
-            .padding(16.dp)
+            .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Top Spending Category: ", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.DarkGray)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(topCategory?.let { "${it.first} - ₹${it.second}" } ?: "No data", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text(
+                "Top Spending Category: ",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = Color.DarkGray
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                topCategory?.let { "${it.key} - ₹${it.value}" } ?: "No data",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color.Black
+            )
         }
     }
 }
+
