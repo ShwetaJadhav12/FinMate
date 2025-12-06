@@ -1,9 +1,9 @@
 package com.example.finmate.pages
 
-
 import android.widget.Space
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -36,17 +35,27 @@ fun AuthScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+
+    val bgColor = if (isDark) Color(0xFF101820) else Color.White
+    val titleColor = if (isDark) Color(0xFF58A6FF) else Color(0xFF073156)
+    val subtitleColor = if (isDark) Color(0xFF9DA5B4) else Color.Gray
+    val buttonBg = if (isDark) Color(0xFF1976D2) else Color(0xFF4181D0)
+
+    val buttonText = Color.White
+    val outlineText = if (isDark) Color(0xFF58A6FF) else Color(0xFF4181D0)
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(bgColor),
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(30.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.banner1),
+            painter = painterResource(id = R.drawable.a),
             contentDescription = "Banner",
             modifier = Modifier
                 .fillMaxWidth(0.9f)
@@ -57,12 +66,12 @@ fun AuthScreen(
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Start Your Shopping Journey",
+                text = "Monitor your spending and grow your savings",
                 style = TextStyle(
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Serif,
-                    color = Color(0xFF073156),
+                    color = titleColor,
                     textAlign = TextAlign.Center
                 )
             )
@@ -70,12 +79,12 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Explore the best products on our platform!",
+                text = "Track daily expenses effortlessly and save more over time",
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Normal,
-                    color = Color.Gray,
+                    color = subtitleColor,
                     textAlign = TextAlign.Center
                 )
             )
@@ -83,9 +92,7 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Button(
                 onClick = { navController.navigate("login") },
                 modifier = Modifier
@@ -93,8 +100,8 @@ fun AuthScreen(
                     .height(55.dp),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4181D0),
-                    contentColor = Color.White
+                    containerColor = buttonBg,
+                    contentColor = buttonText
                 )
             ) {
                 Text(text = "Log In", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -103,13 +110,13 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-                onClick = { navController.navigate("signup") }, // Hook up to nav
+                onClick = { navController.navigate("signup") },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(55.dp),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF4181D0)
+                    contentColor = outlineText
                 )
             ) {
                 Text(text = "Sign Up", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
