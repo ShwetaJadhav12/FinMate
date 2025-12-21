@@ -116,11 +116,13 @@ fun AppNavigation(
         }
 
 
-
-        // Speech to text page
         composable("speechtotext") {
-            SpeechToTextScreen(navController)
+            SpeechToTextScreen(
+                navController = navController,
+                dashboardVM = dashboardVM   // <- IMPORTANT
+            )
         }
+
     }
 }
 

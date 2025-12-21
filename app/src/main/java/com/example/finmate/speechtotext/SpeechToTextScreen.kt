@@ -1,12 +1,15 @@
 package com.example.finmate.speechtotext
+import java.time.YearMonth // top of file
 
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,21 +19,59 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.finmate.components.saveExpenseToFirestoreVoice
 import com.example.finmate.model.Expenses
-import saveExpenseToFirestore
-import java.text.SimpleDateFormat
+import com.example.finmate.viewmodel.DashboardViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.O)
+private fun saveExpense(
+    expense: Expenses,
+    selectedDate: String,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+        ?: run { onFailure(Exception("User not logged in")); return }
+
+    // selectedDate = dd-MM-yyyy
+    val monthId = try {
+        val normalized = selectedDate.replace("/", "-")
+        val date = java.time.LocalDate.parse(
+            normalized,
+            DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        )
+        YearMonth.from(date).format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    } catch (e: Exception) {
+        YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    }
+
+    val documentId = expense.id.ifEmpty { System.currentTimeMillis().toString() }
+
+    FirebaseFirestore.getInstance()
+        .collection("users")
+        .document(uid)
+        .collection("summary_data")
+        .document(monthId)               // ✅ ALWAYS yyyy-MM
+        .collection("expenses")
+        .document(documentId)
+        .set(expense.copy(id = documentId))
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { onFailure(it) }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpeechToTextScreen(
-    navController: NavController
+    navController: NavController,
+    dashboardVM: DashboardViewModel
+
 ) {
     var spokenText by remember { mutableStateOf("") }
     var extractedInfo by remember { mutableStateOf<Expenses?>(null) }
@@ -113,23 +154,38 @@ fun SpeechToTextScreen(
                     Text("Category: ${info.category}")
                     Text("Date: ${info.date}")
                     Text("Time: ${info.time}")
-
                     Spacer(modifier = Modifier.height(20.dp))
-                    Button(onClick = {
-                        saveExpenseToFirestoreVoice(
-                            info,
-                            onSuccess = {
-                                Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
-                            },
-                            onFailure = {
-                                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT)
-                                    .show()
-                            },
-                        )
-                    }) {
-                        Text("Save")
+
+                    Button(
+                        onClick = {
+                            saveExpense(
+                                expense = info,
+                                selectedDate = info.date,
+                                onSuccess = {
+                                    // refresh dashboard correctly
+                                    try {
+                                        val parts = info.date.split("-")
+                                        val ym = YearMonth.of(parts[2].toInt(), parts[1].toInt())
+                                        dashboardVM.refresh(ym)
+                                    } catch (e: Exception) {
+                                        dashboardVM.refresh(YearMonth.now())
+                                    }
+
+                                    Toast.makeText(context, "Expense Saved!", Toast.LENGTH_SHORT).show()
+                                    navController.popBackStack()
+                                },
+                                onFailure = {
+                                    Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF174E80))
+                    ) {
+                        Text("Save", color = Color.White)
                     }
                 }
+
             }
         }
     )

@@ -113,7 +113,7 @@ fun TransactionCard(expense: Expenses) {
     val cardBackground = if (isDark) Color(0xFF2A3A4F) else Color(0xFFC9E5FA)
     val textTitleColor = if (isDark) Color(0xFFB3E5FC) else Color.Black
     val textSecondaryColor = if (isDark) Color(0xFFB0B0B0) else Color(0xFF154470)
-    val dateColor = if (isDark) Color(0xFF214D73) else Color(0xFF3A3939)
+    val dateColor = if (isDark) Color(0xFFB2C5D7) else Color(0xFF3A3939)
 
     Card(
         shape = RoundedCornerShape(12.dp),
