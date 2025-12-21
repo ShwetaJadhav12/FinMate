@@ -1,10 +1,12 @@
 package com.example.finmate.pages
 
+import YearlyWrapDialog
 import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -22,11 +24,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.finmate.R
 import com.example.finmate.SharedMonthViewModelnew
 import com.example.finmate.components.EditProfileDialog
 import com.example.finmate.components.fetchUserData
+import com.example.finmate.viewmodel.DashboardViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -104,6 +108,8 @@ fun SummaryCardDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilePage(
+    dashboardViewModel: DashboardViewModel,   // ✅ ADD THIS
+
     navController: NavController,
     sharedMonthViewModel: SharedMonthViewModelnew, // 🔹 take selected month from HomeScreen
     selectedIndex: Int = 3,
@@ -240,6 +246,27 @@ fun ProfilePage(
             ) {
                 Text("Edit Profile", color = Color.White)
             }
+
+            var showYearlyWrap by remember { mutableStateOf(false) }
+            Button(
+                onClick = {
+                    showYearlyWrap = true
+                }
+            ) {
+                Text("Show Yearly Card")
+            }
+
+            if (showYearlyWrap) {
+                YearlyWrapDialog(
+                    viewModel = dashboardViewModel,
+                    year = selectedMonth.year,
+                    onDismiss = { showYearlyWrap = false }
+                )
+            }
+
+
+
+
 
             Spacer(modifier = Modifier.height(16.dp))
 //            Button(

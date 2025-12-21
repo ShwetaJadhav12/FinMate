@@ -35,12 +35,12 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 // Transaction data class
-data class Transaction(
-    val title: String,
-    val amount: Double,
-    val category: String,
-    val date: String
-)
+//data class Transaction(
+//    val title: String,
+//    val amount: Double,
+//    val category: String,
+//    val date: String
+//)
 
 @Composable
 fun RecentTransactionsSection() {

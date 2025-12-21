@@ -44,8 +44,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.NotificationCompat
 import com.example.finmate.components.DateAndTimePicker
+import com.example.finmate.components.GradientButton
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -167,6 +169,7 @@ fun HomeScreen(
     }
 
     var selectedIndex by remember { mutableStateOf(0) }
+    var showPrediction by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -239,7 +242,16 @@ fun HomeScreen(
         ) {
 
             item { BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget) }
-
+             item {
+                 GradientButton(
+                     text = "Predict Next Month budget",
+                     onClick = { showPrediction = true },
+                     gradientColors = listOf(Color(0xFF2196F3), Color(0xFF26A69A)),
+                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                         .padding(bottom = 16.dp).clip(RoundedCornerShape(12.dp))
+                         .padding(vertical = 8.dp).padding(vertical = 8.dp)
+                 )
+             }
             item { MonthSelector(sharedMonthViewModel, selectedDate) }
 
             item {
@@ -356,6 +368,65 @@ fun HomeScreen(
             onDismiss = { showIncomeDialog = false }
         )
     }
+    if (showPrediction) {
+        AlertDialog(
+            onDismissRequest = { showPrediction = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color(0xFFF7FBFF),
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Icon circle
+
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Smart Insights",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A237E)
+                    )
+                }
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "We’re building something exciting ✨",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.DarkGray
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Soon, FinMate will predict your next month’s expenses and give you smart saving tips based on your spending habits.",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        lineHeight = 20.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPrediction = false },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Got it", color = Color.White)
+                }
+            }
+        )
+    }
+
     if (showBudgetDialog) {
         AmountInputDialog(
             title = "Set Budget",

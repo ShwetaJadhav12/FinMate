@@ -65,6 +65,7 @@ fun AppNavigation(
         // Profile/Settings Page
         composable("profilepage") {
             ProfilePage(
+                dashboardViewModel = dashboardVM,
                 navController = navController,
                 selectedIndex = 3, // Settings selected
                 onTabSelected = { index ->

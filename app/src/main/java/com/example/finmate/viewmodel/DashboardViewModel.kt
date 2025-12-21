@@ -16,6 +16,11 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 class DashboardViewModel : ViewModel() {
+    var yearlyTotal by mutableStateOf(0)
+    var monthlyTotals by mutableStateOf<Map<String, Int>>(emptyMap())
+    var highestMonth by mutableStateOf("")
+    var highestMonthAmount by mutableStateOf(0)
+    var topCategory by mutableStateOf("")
 
     var income by mutableStateOf(0)
     var expenses by mutableStateOf(0)
@@ -23,6 +28,53 @@ class DashboardViewModel : ViewModel() {
     var remaining by mutableStateOf(0)
     var expenseList by mutableStateOf(listOf<Expenses>())
         private set
+
+    fun loadYearlyWrap(year: Int) {
+        viewModelScope.launch {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+            val firestore = FirebaseFirestore.getInstance()
+
+            val monthMap = mutableMapOf<String, Int>()
+            val categoryMap = mutableMapOf<String, Int>()
+            var total = 0
+
+            for (month in 1..12) {
+                val monthId = String.format("%04d-%02d", year, month)
+
+                val snapshot = firestore.collection("users")
+                    .document(uid)
+                    .collection("summary_data")
+                    .document(monthId)
+                    .collection("expenses")
+                    .get()
+                    .await()
+
+                var monthSum = 0
+
+                for (doc in snapshot.documents) {
+                    val expense = doc.toObject(Expenses::class.java) ?: continue
+                    val amt = expense.amount?.toIntOrNull() ?: 0
+
+                    monthSum += amt
+                    total += amt
+
+                    val cat = expense.category ?: "Other"
+                    categoryMap[cat] = categoryMap.getOrDefault(cat, 0) + amt
+                }
+
+                if (monthSum > 0) monthMap[monthId] = monthSum
+            }
+
+            yearlyTotal = total
+            monthlyTotals = monthMap
+
+            val highest = monthMap.maxByOrNull { it.value }
+            highestMonth = highest?.key ?: ""
+            highestMonthAmount = highest?.value ?: 0
+
+            topCategory = categoryMap.maxByOrNull { it.value }?.key ?: "None"
+        }
+    }
 
     // ================= Load all data for selected month =================
     @SuppressLint("NewApi")
