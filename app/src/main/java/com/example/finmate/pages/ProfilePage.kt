@@ -248,10 +248,14 @@ fun ProfilePage(
             }
 
             var showYearlyWrap by remember { mutableStateOf(false) }
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
                     showYearlyWrap = true
-                }
+                },
+                modifier = Modifier.fillMaxWidth(0.8f),
+                colors = ButtonDefaults.buttonColors(containerColor = buttonColor,
+                    contentColor = Color.White)
             ) {
                 Text("Show Yearly Card")
             }

@@ -316,7 +316,7 @@ fun HomeScreen(
 
                     Text(
                         text = "Show More",
-                        color = Color.Blue,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
@@ -699,34 +699,104 @@ fun TransactionItem(expense: Expenses) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BudgetProgressBox(expenses: Int, budget: Int) {
-    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
-    val percentage = if (budget > 0) ((expenses.toFloat() / budget) * 100).toInt() else 0
+
+    val today = LocalDate.now()
+        .format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
+
+    val percentage =
+        if (budget > 0) ((expenses.toFloat() / budget) * 100).toInt() else 0
+
+    val isDark = isSystemInDarkTheme()
+
+    // 🎨 Improved, calmer gradients
+    val backgroundGradient = when {
+        percentage >= 95 -> {
+            //  Warning (NOT aggressive red)
+            if (isDark) {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF7A1F1F), // Muted wine
+                        Color(0xFFB85C38)  // Soft burnt orange
+                    )
+                )
+            } else {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF9D563E),
+                        Color(0xFFB03611)
+                    )
+                )
+            }
+        }
+
+        else -> {
+            // ✅ Normal (matches app bar blue)
+            if (isDark) {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF0D47A1),
+                        Color(0xFF1976D2)
+                    )
+                )
+            } else {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF2196F3),
+                        Color(0xFF4FC3F7)
+                    )
+                )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(brush = Brush.horizontalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF26A69A))))
+            .height(110.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(backgroundGradient)
             .padding(16.dp)
     ) {
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxHeight()
         ) {
-            Text(today, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+
+            // 📅 Date
+            Text(
+                text = today,
+                color = Color.White,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+
             Column {
-                Text("Budget used: $percentage%", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+                // 📊 Usage text
+                Text(
+                    text = "Budget used: $percentage%",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 📈 Progress bar
                 LinearProgressIndicator(
                     progress = (percentage.coerceIn(0, 100) / 100f),
                     color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).padding(top = 4.dp)
+                    trackColor = Color.White.copy(alpha = 0.35f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
                 )
             }
         }
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 

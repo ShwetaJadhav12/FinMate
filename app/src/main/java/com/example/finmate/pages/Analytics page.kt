@@ -12,8 +12,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -172,6 +174,12 @@ fun AnalyticsPage(
     val textSecondaryColor = if (isDark) Color(0xFFEEEEEE) else Color.Black
     val errorColor = if (isDark) Color(0xFFFF8A80) else Color(0xFFD32F2F)
 
+    val buttonBg = if (isDark) Color(0xFF1E88E5) else Color(0xFF2196F3)
+
+    val dropdownBg = if (isDark) Color(0xFF1E1E1E) else Color.White
+    val dropdownText = if (isDark) Color.White else Color.Black
+    val dropdownBorder = if (isDark) Color(0xFF424242) else Color(0xFFDDDDDD)
+
     val categoryColors = mapOf(
         "Food" to Color(0xFF4CAF50),
         "Shopping" to Color(0xFFFF9800),
@@ -182,7 +190,7 @@ fun AnalyticsPage(
     )
 
     val monthlyData = rememberMonthlyData(categoryColors)
-
+    val textColor = if (isDark) Color.White else Color(0xFF0D47A1)
     var selectedOption by remember { mutableStateOf("Monthly Analysis") }
     val options = listOf("Monthly Analysis", "Category-wise Distribution")
 
@@ -255,13 +263,52 @@ fun AnalyticsPage(
         ) {
             // Dropdown for analysis type
             Box {
-                Button(onClick = { expanded = true }) {
-                    Text(selectedOption)
+                // 🔘 Button with Arrow
+                Button(
+                    onClick = { expanded = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) Color(0xFF1E88E5) else Color(0xFF2196F3)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedOption,
+                            color = Color.White,
+                            fontSize = 15.sp
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Dropdown",
+                            tint = Color.White
+                        )
+                    }
                 }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+
+                // 📂 Dropdown Menu
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier
+                        .background(
+                            if (isDark) Color(0xFF1E1E1E) else Color.White,
+                            RoundedCornerShape(12.dp)
+                        )
+                ) {
                     options.forEach { option ->
                         DropdownMenuItem(
-                            text = { Text(option) },
+                            text = {
+                                Text(
+                                    text = option,
+                                    color = if (isDark) Color.White else Color.Black,
+                                    fontSize = 14.sp
+                                )
+                            },
                             onClick = {
                                 selectedOption = option
                                 expanded = false
@@ -270,6 +317,8 @@ fun AnalyticsPage(
                     }
                 }
             }
+
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -293,10 +342,17 @@ fun AnalyticsPage(
                                             selectedMonthData = month to data
                                             showDialog = true
                                         },
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                                     colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+
+                                        // 🔹 Header: Month
                                         Text(
                                             text = month.toString(),
                                             fontSize = 20.sp,
@@ -304,28 +360,66 @@ fun AnalyticsPage(
                                             color = textPrimaryColor
                                         )
 
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Spacer(modifier = Modifier.height(12.dp))
 
-                                        Text(
-                                            "Budget: ₹${data.budget.toInt()}",
-                                            fontSize = 16.sp,
-                                            color = textSecondaryColor
-                                        )
-                                        Text(
-                                            "Remaining: ₹${data.budget - data.expenses.sumOf { it.amount }}",
-                                            fontSize = 16.sp,
-                                            color = textSecondaryColor
-                                        )
+                                        // 🔹 Budget + Remaining (side by side)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = "Budget",
+                                                    fontSize = 13.sp,
+                                                    color = textSecondaryColor
+                                                )
+                                                Text(
+                                                    text = "₹${data.budget.toInt()}",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = textPrimaryColor
+                                                )
+                                            }
 
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "Remaining",
+                                                    fontSize = 13.sp,
+                                                    color = textSecondaryColor
+                                                )
+                                                Text(
+                                                    text = "₹${data.budget - data.expenses.sumOf { it.amount }}",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = textPrimaryColor
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        Divider(color = Color.LightGray.copy(alpha = 0.4f))
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        // 🔹 Highlight: Total Expenses
                                         val totalExpenses = data.expenses.sumOf { it.amount }
+
                                         Text(
-                                            "Total Expenses: ₹$totalExpenses",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            text = "Total Expenses",
+                                            fontSize = 13.sp,
+                                            color = textSecondaryColor
+                                        )
+
+                                        Text(
+                                            text = "₹$totalExpenses",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
                                             color = errorColor
                                         )
                                     }
                                 }
+
                             }
                         }
 
@@ -383,22 +477,55 @@ fun AnalyticsPage(
                     }
                 }
 
+
                 "Category-wise Distribution" -> {
                     if (monthlyData.isEmpty()) {
                         Text("No expenses available", color = textPrimaryColor)
                     } else {
                         var monthExpanded by remember { mutableStateOf(false) }
                         Box {
-                            Button(onClick = { monthExpanded = true }) {
-                                Text(selectedMonth?.toString() ?: "Select Month")
+                            // 🔘 ORIGINAL BUTTON (with arrow)
+                            Button(
+                                onClick = { monthExpanded = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = buttonBg),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = selectedMonth?.toString() ?: "Select Month",
+                                        color = Color.White,
+                                        fontSize = 15.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.width(6.dp))
+
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Dropdown",
+                                        tint = Color.White
+                                    )
+                                }
                             }
+
+                            // 📂 DROPDOWN MENU (VISIBLE + THEMED)
                             DropdownMenu(
                                 expanded = monthExpanded,
-                                onDismissRequest = { monthExpanded = false }
+                                onDismissRequest = { monthExpanded = false },
+                                modifier = Modifier
+                                    .background(dropdownBg, RoundedCornerShape(12.dp))
+                                    .width(IntrinsicSize.Min)
                             ) {
                                 monthlyData.keys.forEach { month ->
                                     DropdownMenuItem(
-                                        text = { Text(month.toString()) },
+                                        text = {
+                                            Text(
+                                                text = month.toString(),
+                                                color = textColor,
+                                                fontSize = 14.sp
+                                            )
+                                        },
                                         onClick = {
                                             selectedMonth = month
                                             monthExpanded = false
@@ -407,6 +534,7 @@ fun AnalyticsPage(
                                 }
                             }
                         }
+
 
                         Spacer(modifier = Modifier.height(16.dp))
 

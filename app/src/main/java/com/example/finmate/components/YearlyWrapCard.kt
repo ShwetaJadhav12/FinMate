@@ -1,14 +1,8 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -27,27 +21,30 @@ fun YearlyWrapDialog(
     year: Int,
     onDismiss: () -> Unit
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
 
-    val gradientBrush = if (isDarkTheme) {
-        Brush.linearGradient(
+    // 🌈 Background Gradient (Soft & Premium)
+    val backgroundBrush = if (isDark) {
+        Brush.verticalGradient(
             colors = listOf(
-                Color(0xFF0D47A1), // Dark Blue
-                Color(0xFF33A3DC)  // Almost Black Blue
+                Color(0xFF0F172A),
+                Color(0xFF1E293B)
             )
         )
     } else {
-        Brush.linearGradient(
+        Brush.verticalGradient(
             colors = listOf(
-                Color(0xFF90CAF9), // Light Blue
-                Color(0xFF1E88E5)  // Primary Blue
+                Color(0xFFF9FBFF),
+                Color(0xFFEAF2FF)
             )
         )
     }
 
-    val textColor = if (isDarkTheme) Color.White else Color.Black
-    val buttonBg = if (isDarkTheme) Color.White else Color(0xFF0A375E)
-    val buttonText = if (isDarkTheme) Color(0xFF82A9E5) else Color.White
+    // 🎨 Typography Colors
+    val titleColor = if (isDark) Color.White else Color(0xFF0F172A)
+    val subtitleColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
+    val labelColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val valueColor = if (isDark) Color.White else Color(0xFF0F172A)
 
     LaunchedEffect(year) {
         viewModel.loadYearlyWrap(year)
@@ -57,33 +54,118 @@ fun YearlyWrapDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(gradientBrush, RoundedCornerShape(28.dp))
+                .background(backgroundBrush, RoundedCornerShape(28.dp))
                 .padding(24.dp)
         ) {
 
+            // 🏷️ Title
             Text(
-                text = "Your $year Money Wrapped 💙",
+                text = "Your $year Money Wrapped",
                 fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = textColor
+                fontWeight = FontWeight.SemiBold,
+                color = titleColor
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Text("💸 You spent ₹${viewModel.yearlyTotal}", color = textColor)
-            Text("🔥 Highest month: ${viewModel.highestMonth}", color = textColor)
-            Text("🍔 Top category: ${viewModel.topCategory}", color = textColor)
+            Text(
+                text = "A simple summary of your spending",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = subtitleColor
+            )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // 💎 Inner Card
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = if (isDark)
+                            Color(0xFF020617).copy(alpha = 0.4f)
+                        else
+                            Color.White,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(20.dp)
+            ) {
+
+                WrapTextItem(
+                    label = "TOTAL SPENT",
+                    value = "₹${viewModel.yearlyTotal}",
+                    labelColor = labelColor,
+                    valueColor = valueColor
+                )
+
+                DividerSpacer()
+
+                WrapTextItem(
+                    label = "HIGHEST SPENDING MONTH",
+                    value = viewModel.highestMonth,
+                    labelColor = labelColor,
+                    valueColor = valueColor
+                )
+
+                DividerSpacer()
+
+                WrapTextItem(
+                    label = "TOP CATEGORY",
+                    value = viewModel.topCategory,
+                    labelColor = labelColor,
+                    valueColor = valueColor
+                )
+            }
+
+            Spacer(modifier = Modifier.height(26.dp))
+
+            // 🔘 Close Button
             Button(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End),
-                colors = ButtonDefaults.buttonColors(containerColor = buttonBg),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF3B82F6)
+                )
             ) {
-                Text("Close", color = buttonText)
+                Text(
+                    text = "Close",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
             }
         }
     }
+}
+@Composable
+fun WrapTextItem(
+    label: String,
+    value: String,
+    labelColor: Color,
+    valueColor: Color
+) {
+    Column {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = labelColor,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = value,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = valueColor
+        )
+    }
+}
+
+@Composable
+fun DividerSpacer() {
+    Spacer(modifier = Modifier.height(18.dp))
 }
