@@ -42,7 +42,7 @@ fun SplashScreen(navController: NavHostController) {
         delay(1000) // wait for animation to complete
 
         val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
-        navController.navigate(if (isLoggedIn) "home" else "auth") {
+        navController.navigate(if (isLoggedIn) "home" else "onboarding") {
             popUpTo("splash") { inclusive = true }
         }
     }

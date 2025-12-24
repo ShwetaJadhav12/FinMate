@@ -26,6 +26,7 @@ import androidx.compose.ui.window.Popup
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.finmate.R
+import com.example.finmate.components.OnboardingPrefs
 import com.example.project_2_ecommerce_app.viewmodel.AuthViewModel
 
 @Composable
@@ -179,6 +180,7 @@ fun SignupScreen(
                     authViewModel.Signup(email, name, password) { success, message ->
                         if (success) {
                             isLoading = true
+
                             navController.navigate("home") {
                                 popUpTo("auth") { inclusive = true }
                             }

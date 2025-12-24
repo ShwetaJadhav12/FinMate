@@ -1,5 +1,13 @@
 package com.example.finmate.pages
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.animation.core.animateFloatAsState
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -39,7 +47,8 @@ import java.time.format.DateTimeFormatter
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.widget.Toast
+import androidx.compose.animation.core.animateDpAsState
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.NotificationCompat
 import com.example.finmate.components.DateAndTimePicker
 import com.example.finmate.components.GradientButton
+import com.example.finmate.components.OnboardingPrefs
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -242,16 +252,7 @@ fun HomeScreen(
         ) {
 
             item { BudgetProgressBox(dashboardVM.expenses, dashboardVM.budget) }
-             item {
-                 GradientButton(
-                     text = "Predict Next Month budget",
-                     onClick = { showPrediction = true },
-                     gradientColors = listOf(Color(0xFF2196F3), Color(0xFF26A69A)),
-                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                         .padding(bottom = 16.dp).clip(RoundedCornerShape(12.dp))
-                         .padding(vertical = 8.dp).padding(vertical = 8.dp)
-                 )
-             }
+
             item { MonthSelector(sharedMonthViewModel, selectedDate) }
 
             item {
@@ -764,4 +765,173 @@ fun TopSpendingCategoryBox(expenses: List<Expenses>) {
         }
     }
 }
+@Composable
+fun HowToUseExpandableCard(
+    context: Context
+) {
+    var expanded by remember { mutableStateOf(true) }
 
+    val pages = listOf(
+        Pair(Icons.Default.Star, "Set your monthly budget"),
+        Pair(Icons.Default.AddCircle, "Add expenses manually or by voice"),
+        Pair(Icons.Default.ThumbUp, "Track your budget usage"),
+        Pair(Icons.Default.Favorite, "View analytics & categories")
+    )
+
+    val pagerState = rememberPagerState { pages.size }
+
+    AnimatedVisibility(
+        visible = expanded,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut()
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(230.dp),
+            shape = RoundedCornerShape(22.dp),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF1E88E5), // Blue
+                                Color(0xFF26A69A)  // Teal
+                            )
+                        )
+                    )
+                    .padding(16.dp)
+            ) {
+
+                Column {
+
+                    // 🔷 HEADER
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.KeyboardArrowUp,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Getting Started",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    expanded = false
+                                    OnboardingPrefs.disable(context)
+                                }
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 👉 HORIZONTAL SWIPE CONTENT
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f)
+                    ) { page ->
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                pages[page].first,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(48.dp)
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Text(
+                                pages[page].second,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // 🫧 BUBBLE INDICATOR
+                    DotsIndicator(
+                        totalDots = pages.size,
+                        selectedIndex = pagerState.currentPage,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+            }
+        }
+    }
+}
+@Composable
+fun DotsIndicator(
+    totalDots: Int,
+    selectedIndex: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        repeat(totalDots) { index ->
+            val size by animateDpAsState(
+                targetValue = if (index == selectedIndex) 10.dp else 6.dp,
+                label = ""
+            )
+
+            Box(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(
+                        if (index == selectedIndex)
+                            Color.White
+                        else
+                            Color.White.copy(alpha = 0.4f)
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+fun HowToRow(icon: ImageVector, text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 6.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Color(0xFF1565C0),
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(text, fontSize = 14.sp, color = Color.DarkGray)
+    }
+}
