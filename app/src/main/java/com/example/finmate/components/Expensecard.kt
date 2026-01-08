@@ -30,12 +30,23 @@ fun ExpenseCard(
     onExpenseUpdated: (newAmount: Int, oldAmount: Int) -> Unit
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
+    val isDark = isSystemInDarkTheme()
+
+    // 🎨 Theme colors (FINAL)
+    val cardBg = if (isDark) Color(0xFF1F2A33) else Color(0xFFE3F2FD)
+    val titleColor = if (isDark) Color(0xFFBBDEFB) else Color(0xFF1565C0)
+    val secondaryText = if (isDark) Color(0xFF90A4AE) else Color(0xFF37474F)
+    val amountColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+    val errorColor = if (isDark) Color(0xFFFF8A80) else Color(0xFFD32F2F)
+    val editIconColor = if (isDark) Color(0xFFB0BEC5) else Color(0xFF455A64)
+
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -46,24 +57,24 @@ fun ExpenseCard(
                     text = expense.title,
                     fontSize = 18.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    color = if (isSystemInDarkTheme()) Color(0xFFB3E5FC) else Color.Black
+                    color = titleColor
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "₹${expense.amount}",
                     fontSize = 16.sp,
-                    color = Color(0xFF4CAF50)
+                    color = amountColor
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Date: ${expense.date}",
                     fontSize = 14.sp,
-                    color = if (isSystemInDarkTheme()) Color(0xFFB0B0B0) else Color.Gray
+                    color = secondaryText
                 )
                 Text(
                     text = "Time: ${expense.time}",
                     fontSize = 14.sp,
-                    color = if (isSystemInDarkTheme()) Color(0xFFB0B0B0) else Color.Gray
+                    color = secondaryText
                 )
             }
 
@@ -71,13 +82,12 @@ fun ExpenseCard(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.SpaceAround
             ) {
-                // Delete
+                // 🗑 Delete
                 IconButton(
                     onClick = {
                         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@IconButton
                         val db = FirebaseFirestore.getInstance()
                         val amountInt = expense.amount.toIntOrNull() ?: 0
-
                         val monthId = getMonthIdFromDate(expense.date)
 
                         db.collection("users").document(uid)
@@ -87,18 +97,18 @@ fun ExpenseCard(
                             .document(expense.id)
                             .delete()
                             .addOnSuccessListener { onExpenseDeleted(amountInt) }
-
                     },
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
                 }
 
+                // ✏ Edit
                 IconButton(
                     onClick = { showEditDialog = true },
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.DarkGray)
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = editIconColor)
                 }
             }
         }
@@ -113,6 +123,7 @@ fun ExpenseCard(
                 val db = FirebaseFirestore.getInstance()
                 val oldAmount = expense.amount.toIntOrNull() ?: 0
                 val newAmountInt = newAmount.toIntOrNull() ?: 0
+                val monthId = getMonthIdFromDate(newDate)
 
                 val updatedExpense = expense.copy(
                     title = newTitle,
@@ -121,7 +132,10 @@ fun ExpenseCard(
                     time = newTime
                 )
 
+                // ✅ FIXED PATH
                 db.collection("users").document(uid)
+                    .collection("summary_data")
+                    .document(monthId)
                     .collection("expenses")
                     .document(expense.id)
                     .set(updatedExpense)
@@ -129,11 +143,11 @@ fun ExpenseCard(
                         onExpenseUpdated(newAmountInt, oldAmount)
                         showEditDialog = false
                     }
-                    .addOnFailureListener { it.printStackTrace() }
             }
         )
     }
 }
+
 @Composable
 fun EditExpenseDialog(
     expense: Expenses,
@@ -166,8 +180,6 @@ fun EditExpenseDialog(
         }
     )
 }
-
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun getMonthIdFromDate(date: String): String {

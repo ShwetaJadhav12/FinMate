@@ -3,6 +3,7 @@ package com.example.finmate.pages
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,13 +32,21 @@ fun CategoryExpensesScreen(
 ) {
     var expenses by remember { mutableStateOf<List<Expenses>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val isDark = isSystemInDarkTheme()
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+    // 🎨 THEME COLORS
+    val primaryBlue = if (isDark) Color(0xFF90CAF9) else Color(0xFF2196F3)
+    val cardBg = if (isDark) Color(0xFF2A2E52) else Color(0xFFBBDEFB)
+    val textPrimary = if (isDark) Color.White else Color.Black
+    val textSecondary = if (isDark) Color.LightGray else Color.DarkGray
 
     // Format month as yyyy-MM
     val monthId = selectedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
 
-    // 🔁 Fetch expenses of this category for the selected month
     LaunchedEffect(categoryName, selectedMonth) {
         if (uid != null) {
             isLoading = true
@@ -50,26 +59,48 @@ fun CategoryExpensesScreen(
                     isLoading = false
                 },
                 onFailure = { error ->
-                    Toast.makeText(context, "Failed to fetch: ${error.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Failed to fetch: ${error.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     isLoading = false
                 }
             )
         }
     }
 
-    // Total spent for this category in the month
     fun totalSpent(): Int = expenses.sumOf { it.amount.toIntOrNull() ?: 0 }
+
+    val filteredExpenses = expenses.filter { expense ->
+        searchQuery.isBlank() ||
+                expense.title.contains(searchQuery, true) ||
+                expense.amount.contains(searchQuery) ||
+                expense.date.contains(searchQuery) ||
+                expense.time.contains(searchQuery)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "$categoryName Expenses ($monthId)") },
+                title = {
+                    Text(
+                        text = "$categoryName Expenses ($monthId)",
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF2196F3))
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = primaryBlue
+                )
             )
         }
     ) { innerPadding ->
@@ -79,29 +110,57 @@ fun CategoryExpensesScreen(
                 .padding(12.dp)
         ) {
 
-            // Total Spent Card
+            // 💳 Total Spent Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
+                colors = CardDefaults.cardColors(containerColor = cardBg)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Total Spent", style = MaterialTheme.typography.titleMedium)
-                    Text("₹ ${totalSpent()}", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Total Spent",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = textSecondary
+                    )
+                    Text(
+                        "₹ ${totalSpent()}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // 🔍 SEARCH BAR
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search expenses...", color = textSecondary) },
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(color = textPrimary),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryBlue,
+                    unfocusedBorderColor = textSecondary,
+                    cursorColor = primaryBlue
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             when {
                 isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                    CircularProgressIndicator(color = primaryBlue)
                 }
-                expenses.isEmpty() -> {
-                    Text("No expenses found for $categoryName in $monthId")
+                filteredExpenses.isEmpty() -> {
+                    Text(
+                        "No matching expenses found",
+                        color = textSecondary
+                    )
                 }
                 else -> {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(expenses) { expense ->
+                        items(filteredExpenses) { expense ->
                             ExpenseCard(
                                 expense = expense,
                                 onExpenseDeleted = { _ ->
@@ -109,7 +168,9 @@ fun CategoryExpensesScreen(
                                 },
                                 onExpenseUpdated = { newAmount, _ ->
                                     expenses = expenses.map {
-                                        if (it.id == expense.id) it.copy(amount = newAmount.toString()) else it
+                                        if (it.id == expense.id)
+                                            it.copy(amount = newAmount.toString())
+                                        else it
                                     }
                                 }
                             )
