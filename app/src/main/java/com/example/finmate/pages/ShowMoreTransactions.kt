@@ -3,23 +3,14 @@ package com.example.finmate.pages
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,20 +26,25 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-
-
-
-
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShowMoreTransactionsScreen(
-    selectedMonth: YearMonth   // ✅ gets month from navigation
+    selectedMonth: YearMonth
 ) {
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val expenses = remember { mutableStateListOf<Expenses>() }
+    var searchQuery by remember { mutableStateOf("") }   // ✅ ADDED
     val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) } // for 3-dots menu
+    var expanded by remember { mutableStateOf(false) }
+
+    val isDark = isSystemInDarkTheme()
+
+    // 🎨 THEME COLORS
+    val topBarColor = if (isDark) Color(0xFF1F2A33) else Color(0xFF3198F1)
+    val searchBorder = if (isDark) Color(0xFF90CAF9) else Color(0xFF2196F3)
+    val searchText = if (isDark) Color.White else Color.Black
+    val searchHint = if (isDark) Color(0xFFB0BEC5) else Color.Gray
 
     // 🔹 Load transactions for selected month
     LaunchedEffect(uid, selectedMonth) {
@@ -88,18 +84,28 @@ fun ShowMoreTransactionsScreen(
         }
     }
 
+    // ✅ FILTERED LIST (ADDED)
+    val filteredExpenses = expenses.filter { expense ->
+        searchQuery.isBlank() ||
+                expense.title.contains(searchQuery, true) ||
+                expense.amount.contains(searchQuery) ||
+                expense.category.contains(searchQuery, true) ||
+                expense.date.contains(searchQuery) ||
+                expense.time.contains(searchQuery)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("All Transactions") },
+                title = { Text("All Transactions", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                        Icon(Icons.Default.MoreVert, contentDescription = "More Options", tint = Color.White)
                     }
                     DropdownMenu(
                         expanded = expanded,
@@ -109,11 +115,10 @@ fun ShowMoreTransactionsScreen(
                             text = { Text("Oldest Date First") },
                             onClick = {
                                 expanded = false
-                                expenses.sortBy { expense ->
-                                    val dateTimeString = "${expense.date} ${expense.time}"
+                                expenses.sortBy {
                                     try {
                                         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                            .parse(dateTimeString)
+                                            .parse("${it.date} ${it.time}")
                                     } catch (e: Exception) {
                                         null
                                     }
@@ -124,18 +129,18 @@ fun ShowMoreTransactionsScreen(
                             text = { Text("Newest Date First") },
                             onClick = {
                                 expanded = false
-                                expenses.sortByDescending { expense ->
-                                    val dateTimeString = "${expense.date} ${expense.time}"
+                                expenses.sortByDescending {
                                     try {
                                         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                            .parse(dateTimeString)
+                                            .parse("${it.date} ${it.time}")
                                     } catch (e: Exception) {
                                         null
                                     }
                                 }
-                            })
+                            }
+                        )
                         DropdownMenuItem(
-                            text = { Text("A-->Z") },
+                            text = { Text("A → Z") },
                             onClick = {
                                 expanded = false
                                 expenses.sortBy { it.title }
@@ -157,25 +162,42 @@ fun ShowMoreTransactionsScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("Sort by Amount") },
-                            onClick = {
-                                expanded = false
-                            }
-
+                            onClick = { expanded = false }
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF3198F1))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(8.dp)
         ) {
-            items(expenses) { expense ->
-                TransactionCard(expense) // ✅ your existing transaction card UI
+
+            // 🔍 SEARCH BAR (ADDED)
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search transactions...", color = searchHint) },
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(color = searchText),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = searchBorder,
+                    unfocusedBorderColor = searchHint,
+                    cursorColor = searchBorder
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn {
+                items(filteredExpenses) { expense ->
+                    TransactionCard(expense)
+                }
             }
         }
     }
