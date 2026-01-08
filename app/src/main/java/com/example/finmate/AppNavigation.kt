@@ -45,6 +45,8 @@ fun AppNavigation(
         }
 
         // Authentication
+
+
         composable("onboarding") { OnboardingScreen(navController) }
         composable("auth") { AuthScreen(navController) }
         composable("login") { LoginScreen(navController) }

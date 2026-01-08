@@ -106,10 +106,10 @@ fun ShowMoreTransactionsScreen(
                         onDismissRequest = { expanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Sort by Date") },
+                            text = { Text("Oldest Date First") },
                             onClick = {
                                 expanded = false
-                                expenses.sortByDescending { expense ->
+                                expenses.sortBy { expense ->
                                     val dateTimeString = "${expense.date} ${expense.time}"
                                     try {
                                         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -121,18 +121,46 @@ fun ShowMoreTransactionsScreen(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Newest Date First") },
+                            onClick = {
+                                expanded = false
+                                expenses.sortByDescending { expense ->
+                                    val dateTimeString = "${expense.date} ${expense.time}"
+                                    try {
+                                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                            .parse(dateTimeString)
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                            })
+                        DropdownMenuItem(
+                            text = { Text("A-->Z") },
+                            onClick = {
+                                expanded = false
+                                expenses.sortBy { it.title }
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Sort by Time") },
                             onClick = {
                                 expanded = false
-                                expenses.sortByDescending { it.time }
+                                expenses.sortBy { it.time }
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Sort by Category") },
                             onClick = {
                                 expanded = false
-                                expenses.sortBy { it.category ?: "" }
+                                expenses.sortBy { it.category }
                             }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort by Amount") },
+                            onClick = {
+                                expanded = false
+                            }
+
                         )
                     }
                 },

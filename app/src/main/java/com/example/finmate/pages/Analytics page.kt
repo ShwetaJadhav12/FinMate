@@ -439,11 +439,31 @@ fun AnalyticsPage(
                                     TextButton(onClick = {
                                         val bitmap = captureViewAsBitmap(view)
                                         val filename = "Summary_${month}.png"
-                                        val fos = context.openFileOutput(filename, android.content.Context.MODE_PRIVATE)
-                                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-                                        fos.close()
-                                        Toast.makeText(context, "Saved as $filename", Toast.LENGTH_SHORT).show()
+
+                                        val resolver = context.contentResolver
+                                        val contentValues = android.content.ContentValues().apply {
+                                            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, filename)
+                                            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
+                                            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FinMate")
+                                        }
+
+                                        val imageUri = resolver.insert(
+                                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                            contentValues
+                                        )
+
+                                        imageUri?.let { uri ->
+                                            resolver.openOutputStream(uri)?.use { stream ->
+                                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                                            }
+
+                                            Toast.makeText(context, "Saved to Gallery", Toast.LENGTH_SHORT).show()
+                                        } ?: run {
+                                            Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                                        }
+
                                         showDialog = false
+
                                     }) {
                                         Text("Download")
                                     }
@@ -526,6 +546,7 @@ fun AnalyticsPage(
                                                 fontSize = 14.sp
                                             )
                                         },
+
                                         onClick = {
                                             selectedMonth = month
                                             monthExpanded = false

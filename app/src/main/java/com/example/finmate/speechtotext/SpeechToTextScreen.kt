@@ -191,16 +191,78 @@ fun SpeechToTextScreen(
     )
 }
 val keywordCategoryMap = mapOf(
-    // Food
-    "domino" to "Food", "pizza" to "Food", "kfc" to "Food", "zomato" to "Food", "swiggy" to "Food",
-    "Mc's" to "Food", "burger" to "Food", "food" to "Food",
+    // Food & Dining
+    "domino" to "Food", "pizza" to "Food", "kfc" to "Food", "zomato" to "Food",
+    "swiggy" to "Food", "mcd" to "Food", "burger" to "Food", "restaurant" to "Food",
+    "dinner" to "Food", "lunch" to "Food", "breakfast" to "Food", "snacks" to "Food",
+    "cafeteria" to "Food", "cafe" to "Food", "starbucks" to "Food", "tea" to "Food",
+    "coffee" to "Food", "bakery" to "Food", "dessert" to "Food",
 
-    // Travel
-    "ola" to "Transport", "uber" to "Transport", "flight" to "Transport", "airport" to "Transport", "train" to "Transport",
+    // Groceries
+    "grocery" to "Groceries", "bigbasket" to "Groceries", "blinkit" to "Groceries",
+    "jio mart" to "Groceries", "jiomart" to "Groceries", "d-mart" to "Groceries",
+    "dmart" to "Groceries", "supermarket" to "Groceries", "kirana" to "Groceries",
+    "milk" to "Groceries", "vegetables" to "Groceries", "fruits" to "Groceries",
+
+    // Transport & Travel
+    "ola" to "Transport", "uber" to "Transport", "rapido" to "Transport",
+    "bus" to "Transport", "metro" to "Transport", "train" to "Transport",
+    "cab" to "Transport", "fuel" to "Transport", "petrol" to "Transport",
+    "diesel" to "Transport", "flight" to "Transport", "ticket" to "Transport",
+    "airport" to "Transport", "toll" to "Transport", "parking" to "Transport",
+
     // Shopping
-    "flipkart" to "Shopping", "amazon" to "Shopping", "myntra" to "Shopping",
+    "amazon" to "Shopping", "flipkart" to "Shopping", "myntra" to "Shopping",
+    "ajio" to "Shopping", "meesho" to "Shopping", "tatacliq" to "Shopping",
+    "mall" to "Shopping", "clothes" to "Shopping", "fashion" to "Shopping",
+    "shoes" to "Shopping", "electronics" to "Shopping",
+
+    // Entertainment
+    "netflix" to "Entertainment", "prime" to "Entertainment", "hotstar" to "Entertainment",
+    "spotify" to "Entertainment", "wynk" to "Entertainment", "youtube" to "Entertainment",
+    "cinema" to "Entertainment", "movie" to "Entertainment", "theatre" to "Entertainment",
+    "gaming" to "Entertainment", "steam" to "Entertainment",
+
+    // Bills & Utilities
+    "electricity" to "Bills", "light bill" to "Bills", "power" to "Bills",
+    "wifi" to "Bills", "broadband" to "Bills", "internet" to "Bills",
+    "mobile recharge" to "Bills", "recharge" to "Bills", "postpaid" to "Bills",
+    "gas" to "Bills", "water" to "Bills", "rent" to "Bills", "maintenance" to "Bills",
+
     // Health
-    "hospital" to "Health", "doctor" to "Health", "medicine" to "Health", "clinic" to "Health",
+    "hospital" to "Health", "doctor" to "Health", "medicine" to "Health",
+    "medical" to "Health", "pharmacy" to "Health", "chemist" to "Health",
+    "clinic" to "Health", "therapy" to "Health", "gym" to "Health",
+    "fitness" to "Health", "protein" to "Health",
+
+    // Utensils / Home & Kitchen
+    "utensil" to "Utensils", "utensils" to "Utensils",
+    "kitchen" to "Utensils", "kitchenware" to "Utensils",
+    "cooker" to "Utensils", "pressure cooker" to "Utensils",
+    "pan" to "Utensils", "frying pan" to "Utensils",
+    "kadhai" to "Utensils", "pot" to "Utensils",
+    "bowl" to "Utensils", "plate" to "Utensils",
+    "spoon" to "Utensils", "fork" to "Utensils",
+    "knife" to "Utensils", "cutlery" to "Utensils",
+    "tawa" to "Utensils", "jug" to "Utensils",
+    "bottle" to "Utensils", "storage box" to "Utensils",
+    "steel" to "Utensils", "nonstick" to "Utensils",
+    "glass set" to "Utensils", "cup" to "Utensils",
+    "mug" to "Utensils", "thermos" to "Utensils",
+
     // Education
-    "tuition" to "Education", "school" to "Education", "college" to "Education", "course" to "Education"
+    " Education to Education," to "Education", "coaching" to "Education",
+    "tuition" to "Education", "school" to "Education", "college" to "Education",
+    "course" to "Education", "udemy" to "Education", "coursera" to "Education",
+    "byjus" to "Education", "exam fee" to "Education", "books" to "Education",
+    "notebook" to "Education", "stationery" to "Education",
+
+    // Finance & Fees
+    "upi" to "Finance", "bank" to "Finance", "charge" to "Finance",
+    "late fee" to "Finance", "tax" to "Finance", "interest" to "Finance",
+
+    // Others
+    "gift" to "Others", "donation" to "Others", "charity" to "Others",
+    "subscription" to "Others", "service" to "Others"
 )
+

@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun OnboardingScreen(navController: NavHostController) {
 
+
     val isDark = isSystemInDarkTheme()
 
     val bgGradient = if (isDark) {

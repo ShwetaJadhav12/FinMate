@@ -908,7 +908,6 @@ fun HowToUseExpandableCard(
                                 .size(20.dp)
                                 .clickable {
                                     expanded = false
-                                    OnboardingPrefs.disable(context)
                                 }
                         )
                     }

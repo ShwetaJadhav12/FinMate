@@ -1,5 +1,7 @@
 package com.example.finmate.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +18,11 @@ import androidx.compose.ui.unit.sp
 import com.example.finmate.model.Expenses
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ExpenseCard(
     expense: Expenses,
@@ -72,12 +78,16 @@ fun ExpenseCard(
                         val db = FirebaseFirestore.getInstance()
                         val amountInt = expense.amount.toIntOrNull() ?: 0
 
+                        val monthId = getMonthIdFromDate(expense.date)
+
                         db.collection("users").document(uid)
+                            .collection("summary_data")
+                            .document(monthId)
                             .collection("expenses")
                             .document(expense.id)
                             .delete()
                             .addOnSuccessListener { onExpenseDeleted(amountInt) }
-                            .addOnFailureListener { it.printStackTrace() }
+
                     },
                     modifier = Modifier.size(24.dp)
                 ) {
@@ -157,3 +167,18 @@ fun EditExpenseDialog(
     )
 }
 
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun getMonthIdFromDate(date: String): String {
+    return try {
+        val normalized = date.replace("/", "-")
+        val localDate = LocalDate.parse(
+            normalized,
+            DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        )
+        YearMonth.from(localDate).format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    } catch (e: Exception) {
+        YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    }
+}

@@ -15,34 +15,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.finmate.components.OnboardingPrefs
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavHostController) {
+
     var visible by remember { mutableStateOf(true) }
 
-    // Scale animation
     val scale = animateFloatAsState(
         targetValue = if (visible) 1f else 2f,
-        animationSpec = tween(durationMillis = 1000),
+        animationSpec = tween(1000),
         label = "scale"
     )
 
-    // Fade animation
     val alpha = animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000),
+        animationSpec = tween(1000),
         label = "alpha"
     )
 
-    LaunchedEffect(true) {
+    LaunchedEffect(Unit) {
+
         delay(1500)
-        visible = false // trigger animations
-        delay(1000) // wait for animation to complete
+        visible = false
+        delay(1000)
 
         val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
-        navController.navigate(if (isLoggedIn) "home" else "onboarding") {
+        val onboardingDone = OnboardingPrefs.isOnboardingCompleted(navController.context)
+
+        val nextRoute = when {
+            isLoggedIn -> "home"
+            !onboardingDone -> "onboarding"
+            else -> "auth"
+        }
+
+        navController.navigate(nextRoute) {
             popUpTo("splash") { inclusive = true }
         }
     }
